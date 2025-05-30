@@ -13,6 +13,10 @@ export interface LuxuryItem {
   certified: boolean;
   tokenId: string;
   contractAddress: string;
+  saleType: "fixed" | "auction";
+  auctionEndTime?: string;
+  currentBid?: string;
+  totalBids?: number;
 }
 
 export const luxuryItems: LuxuryItem[] = [
@@ -25,7 +29,11 @@ export const luxuryItems: LuxuryItem[] = [
     category: "Watches",
     certified: true,
     tokenId: "47291",
-    contractAddress: "0x8b4c...a7f2"
+    contractAddress: "0x8b4c...a7f2",
+    saleType: "auction",
+    auctionEndTime: "2024-01-27T18:00:00Z",
+    currentBid: "$42,500",
+    totalBids: 12
   },
   {
     id: 2,
@@ -36,7 +44,8 @@ export const luxuryItems: LuxuryItem[] = [
     category: "Jewelry",
     certified: true,
     tokenId: "47292",
-    contractAddress: "0x8b4c...a7f3"
+    contractAddress: "0x8b4c...a7f3",
+    saleType: "fixed"
   },
   {
     id: 3,
@@ -47,7 +56,11 @@ export const luxuryItems: LuxuryItem[] = [
     category: "Art",
     certified: true,
     tokenId: "47293",
-    contractAddress: "0x8b4c...a7f4"
+    contractAddress: "0x8b4c...a7f4",
+    saleType: "auction",
+    auctionEndTime: "2024-01-28T20:00:00Z",
+    currentBid: "$148,000",
+    totalBids: 8
   },
   {
     id: 4,
@@ -58,7 +71,8 @@ export const luxuryItems: LuxuryItem[] = [
     category: "Fashion",
     certified: true,
     tokenId: "47294",
-    contractAddress: "0x8b4c...a7f5"
+    contractAddress: "0x8b4c...a7f5",
+    saleType: "fixed"
   },
   {
     id: 5,
@@ -69,7 +83,11 @@ export const luxuryItems: LuxuryItem[] = [
     category: "Watches",
     certified: true,
     tokenId: "47295",
-    contractAddress: "0x8b4c...a7f6"
+    contractAddress: "0x8b4c...a7f6",
+    saleType: "auction",
+    auctionEndTime: "2024-01-26T15:30:00Z",
+    currentBid: "$67,200",
+    totalBids: 15
   },
   {
     id: 6,
@@ -80,6 +98,7 @@ export const luxuryItems: LuxuryItem[] = [
     category: "Jewelry",
     certified: true,
     tokenId: "47296",
-    contractAddress: "0x8b4c...a7f7"
+    contractAddress: "0x8b4c...a7f7",
+    saleType: "fixed"
   }
 ];

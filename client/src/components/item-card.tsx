@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { IdCard } from "lucide-react";
+import { IdCard, Clock, Gavel } from "lucide-react";
 import { useLocation } from "wouter";
 import type { LuxuryItem } from "@/data/luxury-items";
 
@@ -16,7 +16,11 @@ export default function ItemCard({ item }: ItemCardProps) {
   const [, setLocation] = useLocation();
 
   const handleClick = () => {
-    setLocation(`/item/${item.id}`);
+    if (item.saleType === "auction") {
+      setLocation(`/auction/${item.id}`);
+    } else {
+      setLocation(`/item/${item.id}`);
+    }
   };
 
   return (
@@ -34,14 +38,24 @@ export default function ItemCard({ item }: ItemCardProps) {
           alt={item.name}
           className="w-full h-full object-cover"
         />
-        {item.certified && (
-          <Badge 
-            className="absolute top-4 right-4 bg-green-500 text-white border-green-500"
-          >
-            <IdCard className="w-3 h-3 mr-1" />
-            Certified
-          </Badge>
-        )}
+        <div className="absolute top-4 right-4 space-y-2">
+          {item.certified && (
+            <Badge 
+              className="bg-green-500 text-white border-green-500 block"
+            >
+              <IdCard className="w-3 h-3 mr-1" />
+              Certified
+            </Badge>
+          )}
+          {item.saleType === "auction" && (
+            <Badge 
+              className="bg-blue-500 text-white border-blue-500 block"
+            >
+              <Gavel className="w-3 h-3 mr-1" />
+              Auction
+            </Badge>
+          )}
+        </div>
       </div>
       
       <CardContent className="p-6">
@@ -52,9 +66,23 @@ export default function ItemCard({ item }: ItemCardProps) {
           {item.description.substring(0, 100)}...
         </p>
         <div className="flex justify-between items-center">
-          <span className="text-2xl font-bold" style={{ color: 'hsl(var(--zg-primary))' }}>
-            {item.price}
-          </span>
+          <div>
+            {item.saleType === "auction" ? (
+              <div>
+                <p className="text-sm" style={{ color: 'hsl(var(--zg-muted))' }}>Current Bid</p>
+                <span className="text-2xl font-bold" style={{ color: 'hsl(var(--zg-primary))' }}>
+                  {item.currentBid}
+                </span>
+                <p className="text-xs" style={{ color: 'hsl(var(--zg-muted))' }}>
+                  {item.totalBids} bid{item.totalBids !== 1 ? 's' : ''}
+                </p>
+              </div>
+            ) : (
+              <span className="text-2xl font-bold" style={{ color: 'hsl(var(--zg-primary))' }}>
+                {item.price}
+              </span>
+            )}
+          </div>
           <Badge 
             variant="secondary"
             style={{ 
