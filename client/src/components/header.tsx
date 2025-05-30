@@ -64,12 +64,22 @@ export default function Header() {
                 Sell Item
               </a>
             </Link>
-            <button 
-              className="transition-colors duration-200 hover:text-primary"
-              style={{ color: 'hsl(var(--zg-muted))' }}
-            >
-              About
-            </button>
+            <Link href="/creator">
+              <a 
+                className={`font-medium transition-colors duration-200 ${
+                  location === "/creator" 
+                    ? "text-primary" 
+                    : "hover:text-primary"
+                }`}
+                style={{ 
+                  color: location === "/creator" 
+                    ? 'hsl(var(--zg-primary))' 
+                    : 'hsl(var(--zg-muted))'
+                }}
+              >
+                Creator
+              </a>
+            </Link>
           </nav>
           
           {/* Wallet Connection */}

@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Marketplace from "@/pages/marketplace";
 import ItemDetail from "@/pages/item-detail";
 import SellItem from "@/pages/sell-item";
+import CreatorDashboard from "@/pages/creator-dashboard";
 import Header from "@/components/header";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
         <Route path="/" component={Marketplace} />
         <Route path="/marketplace" component={Marketplace} />
         <Route path="/sell" component={SellItem} />
+        <Route path="/creator" component={CreatorDashboard} />
         <Route path="/item/:id" component={ItemDetail} />
         <Route component={NotFound} />
       </Switch>
