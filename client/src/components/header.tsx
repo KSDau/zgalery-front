@@ -21,12 +21,12 @@ export default function Header() {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/">
-              <h1 
+              <span 
                 className="text-2xl font-bold tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
                 style={{ color: 'hsl(var(--zg-primary))' }}
               >
                 zgallery
-              </h1>
+              </span>
             </Link>
           </div>
           
