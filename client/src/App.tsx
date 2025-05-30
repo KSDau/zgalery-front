@@ -9,6 +9,7 @@ import ItemDetail from "@/pages/item-detail";
 import SellItem from "@/pages/sell-item";
 import CreatorDashboard from "@/pages/creator-dashboard";
 import AuctionDetail from "@/pages/auction-detail";
+import UserProfile from "@/pages/user-profile";
 import Header from "@/components/header";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
         <Route path="/marketplace" component={Marketplace} />
         <Route path="/sell" component={SellItem} />
         <Route path="/creator" component={CreatorDashboard} />
+        <Route path="/profile" component={UserProfile} />
         <Route path="/item/:id" component={ItemDetail} />
         <Route path="/auction/:id" component={AuctionDetail} />
         <Route component={NotFound} />
