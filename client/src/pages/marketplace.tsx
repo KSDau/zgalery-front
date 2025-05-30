@@ -3,7 +3,9 @@ import { luxuryItems } from "@/data/luxury-items";
 import ItemCard from "@/components/item-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Plus } from "lucide-react";
+import { useLocation } from "wouter";
 
 /**
  * Marketplace component that displays the main luxury items marketplace
@@ -13,6 +15,7 @@ export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [priceFilter, setPriceFilter] = useState("all");
+  const [, setLocation] = useLocation();
 
   // Filter items based on search and filters
   const filteredItems = luxuryItems.filter(item => {
@@ -43,13 +46,28 @@ export default function Marketplace() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Hero Section */}
       <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold mb-4" style={{ color: 'hsl(var(--zg-primary))' }}>
-          Certified Luxury Marketplace
-        </h2>
-        <p className="text-xl max-w-2xl mx-auto" style={{ color: 'hsl(var(--zg-muted))' }}>
-          Discover authenticated luxury items with blockchain-verified certificates. 
-          Every piece comes with immutable proof of authenticity.
-        </p>
+        <div className="flex justify-between items-start mb-8">
+          <div className="text-left">
+            <h2 className="text-4xl font-bold mb-4" style={{ color: 'hsl(var(--zg-primary))' }}>
+              Certified Luxury Marketplace
+            </h2>
+            <p className="text-xl max-w-2xl" style={{ color: 'hsl(var(--zg-muted))' }}>
+              Discover authenticated luxury items with blockchain-verified certificates. 
+              Every piece comes with immutable proof of authenticity.
+            </p>
+          </div>
+          <Button 
+            onClick={() => setLocation("/sell")}
+            className="px-6 py-3 text-lg font-semibold"
+            style={{ 
+              backgroundColor: 'hsl(var(--zg-primary))',
+              color: 'hsl(var(--zg-bg))'
+            }}
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Sell Item
+          </Button>
+        </div>
       </div>
 
       {/* Filters & Search */}
