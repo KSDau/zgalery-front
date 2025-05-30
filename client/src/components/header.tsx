@@ -48,6 +48,22 @@ export default function Header() {
                 Marketplace
               </a>
             </Link>
+            <Link href="/sell">
+              <a 
+                className={`font-medium transition-colors duration-200 ${
+                  location === "/sell" 
+                    ? "text-primary" 
+                    : "hover:text-primary"
+                }`}
+                style={{ 
+                  color: location === "/sell" 
+                    ? 'hsl(var(--zg-primary))' 
+                    : 'hsl(var(--zg-muted))'
+                }}
+              >
+                Sell Item
+              </a>
+            </Link>
             <button 
               className="transition-colors duration-200 hover:text-primary"
               style={{ color: 'hsl(var(--zg-muted))' }}
