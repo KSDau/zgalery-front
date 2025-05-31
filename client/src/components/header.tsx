@@ -33,8 +33,8 @@ export default function Header() {
           {/* Navigation */}
           <nav className="hidden md:flex space-x-8">
             <Link href="/marketplace">
-              <a 
-                className={`font-medium transition-colors duration-200 ${
+              <span 
+                className={`font-medium transition-colors duration-200 cursor-pointer ${
                   location === "/" || location === "/marketplace" 
                     ? "text-primary" 
                     : "hover:text-primary"
@@ -46,11 +46,11 @@ export default function Header() {
                 }}
               >
                 Marketplace
-              </a>
+              </span>
             </Link>
             <Link href="/sell">
-              <a 
-                className={`font-medium transition-colors duration-200 ${
+              <span 
+                className={`font-medium transition-colors duration-200 cursor-pointer ${
                   location === "/sell" 
                     ? "text-primary" 
                     : "hover:text-primary"
@@ -62,11 +62,11 @@ export default function Header() {
                 }}
               >
                 Sell Item
-              </a>
+              </span>
             </Link>
             <Link href="/creator">
-              <a 
-                className={`font-medium transition-colors duration-200 ${
+              <span 
+                className={`font-medium transition-colors duration-200 cursor-pointer ${
                   location === "/creator" 
                     ? "text-primary" 
                     : "hover:text-primary"
@@ -78,7 +78,7 @@ export default function Header() {
                 }}
               >
                 Creator
-              </a>
+              </span>
             </Link>
           </nav>
           
