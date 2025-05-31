@@ -18,6 +18,7 @@ const sellItemSchema = z.object({
   price: z.string().min(1, "Price is required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   category: z.string().min(1, "Category is required"),
+  brand: z.string().min(1, "Brand is required"),
   conservationStatus: z.string().min(1, "Conservation status is required"),
   identificationNumber: z.string().min(1, "Identification number is required"),
 });
@@ -40,6 +41,7 @@ export default function SellItem() {
       price: "",
       description: "",
       category: "",
+      brand: "",
       conservationStatus: "",
       identificationNumber: "",
     },
@@ -160,37 +162,80 @@ export default function SellItem() {
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel style={{ color: 'hsl(var(--zg-primary))' }}>
-                      Category *
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger 
-                          style={{ 
-                            backgroundColor: 'hsl(var(--zg-secondary))', 
-                            borderColor: 'hsl(var(--zg-border))' 
-                          }}
-                        >
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="watches">Watches</SelectItem>
-                        <SelectItem value="jewelry">Jewelry</SelectItem>
-                        <SelectItem value="art">Art</SelectItem>
-                        <SelectItem value="fashion">Fashion</SelectItem>
-                        <SelectItem value="collectibles">Collectibles</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel style={{ color: 'hsl(var(--zg-primary))' }}>
+                        Category *
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger 
+                            style={{ 
+                              backgroundColor: 'hsl(var(--zg-secondary))', 
+                              borderColor: 'hsl(var(--zg-border))' 
+                            }}
+                          >
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="watches">Watches</SelectItem>
+                          <SelectItem value="jewelry">Jewelry</SelectItem>
+                          <SelectItem value="art">Art</SelectItem>
+                          <SelectItem value="fashion">Fashion</SelectItem>
+                          <SelectItem value="collectibles">Collectibles</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="brand"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel style={{ color: 'hsl(var(--zg-primary))' }}>
+                        Brand *
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger 
+                            style={{ 
+                              backgroundColor: 'hsl(var(--zg-secondary))', 
+                              borderColor: 'hsl(var(--zg-border))' 
+                            }}
+                          >
+                            <SelectValue placeholder="Select a brand" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="rolex">Rolex</SelectItem>
+                          <SelectItem value="cartier">Cartier</SelectItem>
+                          <SelectItem value="tiffany">Tiffany & Co.</SelectItem>
+                          <SelectItem value="hermes">Hermès</SelectItem>
+                          <SelectItem value="chanel">Chanel</SelectItem>
+                          <SelectItem value="louis-vuitton">Louis Vuitton</SelectItem>
+                          <SelectItem value="patek-philippe">Patek Philippe</SelectItem>
+                          <SelectItem value="omega">Omega</SelectItem>
+                          <SelectItem value="bulgari">Bulgari</SelectItem>
+                          <SelectItem value="van-cleef">Van Cleef & Arpels</SelectItem>
+                          <SelectItem value="basquiat">Jean-Michel Basquiat</SelectItem>
+                          <SelectItem value="picasso">Pablo Picasso</SelectItem>
+                          <SelectItem value="warhol">Andy Warhol</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
