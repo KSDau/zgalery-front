@@ -67,19 +67,82 @@ export default function SellItem() {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const onSubmit = (data: SellItemForm) => {
-    // In a real application, this would submit to the backend
-    console.log("Form data:", data);
-    console.log("Images:", images);
-    
-    toast({
-      title: "Item Listed Successfully",
-      description: "Your luxury item has been submitted for review and will be listed on the marketplace soon.",
-    });
-    
-    // Reset form
-    form.reset();
-    setImages([]);
+  const onSubmit = async (data: SellItemForm) => {
+    try {
+      // Get connected Aleo wallet address (placeholder for now)
+      const ownerAddress = "aleo1placeholder"; // This will be replaced with actual connected wallet
+      
+      // Create NFT data structure
+      const nftData = {
+        owner: ownerAddress,
+        metadata: JSON.stringify({
+          name: data.name,
+          description: data.description,
+          category: data.category,
+          conservationStatus: data.conservationStatus,
+          identificationNumber: data.identificationNumber,
+          images: images
+        }),
+        brand: data.brand,
+        form: data.category.toLowerCase(),
+        edition: `edition_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        nftCommit: `commit_${Date.now()}_${Math.random().toString(36).substr(2, 15)}`,
+        isPrivate: true
+      };
+
+      // Create NFT via API
+      const nftResponse = await fetch('/api/nfts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nftData)
+      });
+
+      if (!nftResponse.ok) {
+        throw new Error('Failed to create NFT');
+      }
+
+      const nft = await nftResponse.json();
+
+      // Create marketplace listing
+      const priceInMicrocredits = Math.floor(parseFloat(data.price.replace(/[$,]/g, '')) * 1_000_000);
+      
+      const listingData = {
+        listingId: `listing_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        nftCommit: nft.nftCommit,
+        seller: ownerAddress,
+        price: priceInMicrocredits,
+        listingPublicKey: `pubkey_${Math.random().toString(36).substr(2, 20)}`,
+        purchased: false,
+        approved: false
+      };
+
+      const listingResponse = await fetch('/api/listings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(listingData)
+      });
+
+      if (!listingResponse.ok) {
+        throw new Error('Failed to create listing');
+      }
+
+      toast({
+        title: "Item Listed Successfully",
+        description: `Your ${data.name} has been minted as an NFT and listed on the marketplace.`,
+      });
+      
+      // Reset form
+      form.reset();
+      setImages([]);
+
+    } catch (error) {
+      console.error('Error submitting item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to list your item. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
