@@ -3,6 +3,7 @@ import { WalletMultiButton } from "@demox-labs/aleo-wallet-adapter-reactui";
 import { Button } from "@/components/ui/button";
 import { Wallet, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Aleo wallet connection button using the official wallet adapter
@@ -10,21 +11,36 @@ import { useEffect, useState } from "react";
 export default function AleoWalletButton() {
   const { publicKey, connecting, connected, wallets } = useWallet();
   const [isWalletAvailable, setIsWalletAvailable] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check if Leo Wallet is available
     const checkWalletAvailability = () => {
+      // Check for Leo Wallet in multiple ways
       const hasLeoWallet = !!(window as any).leoWallet;
       const hasAleoWallet = !!(window as any).aleo;
-      setIsWalletAvailable(hasLeoWallet || hasAleoWallet);
+      const hasWalletInWindow = !!(window as any).leo;
+      
+      console.log("Wallet detection:", {
+        hasLeoWallet,
+        hasAleoWallet, 
+        hasWalletInWindow,
+        userAgent: navigator.userAgent
+      });
+      
+      setIsWalletAvailable(hasLeoWallet || hasAleoWallet || hasWalletInWindow);
     };
 
     checkWalletAvailability();
     
-    // Check periodically in case wallet is installed after page load
-    const interval = setInterval(checkWalletAvailability, 2000);
+    // Check periodically and when DOM is ready
+    const interval = setInterval(checkWalletAvailability, 1000);
+    document.addEventListener('DOMContentLoaded', checkWalletAvailability);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('DOMContentLoaded', checkWalletAvailability);
+    };
   }, []);
 
   // Debug wallet state
@@ -74,6 +90,19 @@ export default function AleoWalletButton() {
           <Wallet className="w-4 h-4" />
           Install Leo Wallet
           <ExternalLink className="w-3 h-3" />
+        </Button>
+        <Button
+          variant="default"
+          onClick={() => {
+            toast({
+              title: "Demo Mode",
+              description: "Using simulation mode - no real transactions will be made.",
+            });
+          }}
+          className="flex items-center gap-2"
+        >
+          <Wallet className="w-4 h-4" />
+          Demo Mode
         </Button>
       </div>
     );
