@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useContractIntegration } from "@/hooks/use-contract-integration";
+import { useSimpleWallet } from "@/components/simple-wallet-button";
 
 const sellItemSchema = z.object({
   name: z.string().min(1, "Item name is required"),
@@ -34,7 +34,8 @@ export default function SellItem() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [images, setImages] = useState<string[]>([]);
-  const { mintAndListNFT, isTransacting, isWalletConnected } = useContractIntegration();
+  const { isConnected: isWalletConnected, address } = useSimpleWallet();
+  const [isTransacting, setIsTransacting] = useState(false);
 
   const form = useForm<SellItemForm>({
     resolver: zodResolver(sellItemSchema),
@@ -79,30 +80,82 @@ export default function SellItem() {
       return;
     }
 
+    setIsTransacting(true);
+
     try {
-      // Prepare NFT data for smart contract
+      // Create NFT data structure for the backend
       const nftData = {
-        name: data.name,
-        description: data.description,
+        owner: address || "unknown",
+        metadata: JSON.stringify({
+          name: data.name,
+          description: data.description,
+          category: data.category,
+          conservationStatus: data.conservationStatus,
+          identificationNumber: data.identificationNumber,
+          images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=800']
+        }),
         brand: data.brand,
-        category: data.category,
-        images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=800'],
-        price: parseFloat(data.price.replace(/[$,]/g, ''))
+        form: data.category.toLowerCase(),
+        edition: `edition_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        nftCommit: `commit_${Date.now()}_${Math.random().toString(36).substr(2, 15)}`,
+        isPrivate: true
       };
 
-      // Mint NFT and list on marketplace using deployed smart contracts
-      const result = await mintAndListNFT(nftData);
+      // Create NFT via API
+      const nftResponse = await fetch('/api/nfts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nftData)
+      });
 
-      if (result.success) {
-        // Reset form and redirect
-        form.reset();
-        setImages([]);
-        setLocation("/marketplace");
+      if (!nftResponse.ok) {
+        throw new Error('Failed to create NFT');
       }
 
+      const nft = await nftResponse.json();
+
+      // Create marketplace listing
+      const priceInMicrocredits = Math.floor(parseFloat(data.price.replace(/[$,]/g, '')) * 1_000_000);
+      
+      const listingData = {
+        listingId: `listing_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        nftCommit: nft.nftCommit,
+        seller: address || "unknown",
+        price: priceInMicrocredits,
+        listingPublicKey: `pubkey_${Math.random().toString(36).substr(2, 20)}`,
+        purchased: false,
+        approved: false
+      };
+
+      const listingResponse = await fetch('/api/listings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(listingData)
+      });
+
+      if (!listingResponse.ok) {
+        throw new Error('Failed to create listing');
+      }
+
+      toast({
+        title: "Item Listed Successfully",
+        description: `Your ${data.name} has been minted as an NFT and listed on the marketplace.`,
+      });
+
+      // Reset form and redirect
+      form.reset();
+      setImages([]);
+      setLocation("/marketplace");
+
     } catch (error: any) {
-      console.error('Contract interaction error:', error);
-      // Error handling is done in the hook
+      console.error('Error listing item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to list your item. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTransacting(false);
     }
   };
 

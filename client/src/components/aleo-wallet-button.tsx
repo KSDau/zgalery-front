@@ -3,13 +3,15 @@ import { WalletMultiButton } from "@demox-labs/aleo-wallet-adapter-reactui";
 import { Button } from "@/components/ui/button";
 import { Wallet, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Aleo wallet connection button using the official wallet adapter
  */
 export default function AleoWalletButton() {
-  const { publicKey, connecting, connected, wallets } = useWallet();
+  const { publicKey, connecting, connected, wallets, connect, disconnect } = useWallet();
   const [isWalletAvailable, setIsWalletAvailable] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check if Leo Wallet is available

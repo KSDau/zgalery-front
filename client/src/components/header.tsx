@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import AleoWalletButton from "./aleo-wallet-button";
+import SimpleWalletButton from "./simple-wallet-button";
 
 /**
  * Header component that displays the main navigation and wallet connection
@@ -83,7 +83,7 @@ export default function Header() {
           </nav>
           
           {/* Wallet Connection */}
-          <AleoWalletButton />
+          <SimpleWalletButton />
         </div>
       </div>
     </header>
