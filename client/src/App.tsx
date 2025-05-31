@@ -98,7 +98,7 @@ function App() {
   const wallets = useMemo(
     () => [
       new LeoWalletAdapter({
-        appName: "zgallery",
+        appName: "zgallery"
       }),
     ],
     []
@@ -110,7 +110,7 @@ function App() {
         wallets={wallets}
         decryptPermission={DecryptPermission.UponRequest}
         network={WalletAdapterNetwork.Testnet}
-        autoConnect
+        autoConnect={false}
       >
         <WalletModalProvider>
           <TooltipProvider>
