@@ -70,80 +70,39 @@ export default function SellItem() {
   };
 
   const onSubmit = async (data: SellItemForm) => {
-    try {
-      // Get connected Aleo wallet address (placeholder for now)
-      const ownerAddress = "aleo1placeholder"; // This will be replaced with actual connected wallet
-      
-      // Create NFT data structure
-      const nftData = {
-        owner: ownerAddress,
-        metadata: JSON.stringify({
-          name: data.name,
-          description: data.description,
-          category: data.category,
-          conservationStatus: data.conservationStatus,
-          identificationNumber: data.identificationNumber,
-          images: images
-        }),
-        brand: data.brand,
-        form: data.category.toLowerCase(),
-        edition: `edition_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        nftCommit: `commit_${Date.now()}_${Math.random().toString(36).substr(2, 15)}`,
-        isPrivate: true
-      };
-
-      // Create NFT via API
-      const nftResponse = await fetch('/api/nfts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(nftData)
-      });
-
-      if (!nftResponse.ok) {
-        throw new Error('Failed to create NFT');
-      }
-
-      const nft = await nftResponse.json();
-
-      // Create marketplace listing
-      const priceInMicrocredits = Math.floor(parseFloat(data.price.replace(/[$,]/g, '')) * 1_000_000);
-      
-      const listingData = {
-        listingId: `listing_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        nftCommit: nft.nftCommit,
-        seller: ownerAddress,
-        price: priceInMicrocredits,
-        listingPublicKey: `pubkey_${Math.random().toString(36).substr(2, 20)}`,
-        purchased: false,
-        approved: false
-      };
-
-      const listingResponse = await fetch('/api/listings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(listingData)
-      });
-
-      if (!listingResponse.ok) {
-        throw new Error('Failed to create listing');
-      }
-
+    if (!isWalletConnected) {
       toast({
-        title: "Item Listed Successfully",
-        description: `Your ${data.name} has been minted as an NFT and listed on the marketplace.`,
-      });
-      
-      // Reset form
-      form.reset();
-      setImages([]);
-
-    } catch (error) {
-      console.error('Error submitting item:', error);
-      toast({
-        title: "Error",
-        description: "Failed to list your item. Please try again.",
+        title: "Wallet Required",
+        description: "Please connect your Leo Wallet to mint and list NFTs.",
         variant: "destructive",
       });
+      return;
+    }
+
+    try {
+      // Prepare NFT data for smart contract
+      const nftData = {
+        name: data.name,
+        description: data.description,
+        brand: data.brand,
+        category: data.category,
+        images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=800'],
+        price: parseFloat(data.price.replace(/[$,]/g, ''))
+      };
+
+      // Mint NFT and list on marketplace using deployed smart contracts
+      const result = await mintAndListNFT(nftData);
+
+      if (result.success) {
+        // Reset form and redirect
+        form.reset();
+        setImages([]);
+        setLocation("/marketplace");
+      }
+
+    } catch (error: any) {
+      console.error('Contract interaction error:', error);
+      // Error handling is done in the hook
     }
   };
 
@@ -481,12 +440,13 @@ export default function SellItem() {
             <Button 
               type="submit"
               className="px-8"
+              disabled={isTransacting || !isWalletConnected}
               style={{ 
                 backgroundColor: 'hsl(var(--zg-primary))',
                 color: 'hsl(var(--zg-bg))'
               }}
             >
-              List Item for Sale
+              {isTransacting ? "Minting NFT..." : !isWalletConnected ? "Connect Wallet First" : "List Item for Sale"}
             </Button>
           </div>
         </form>
