@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useContractIntegration } from "@/hooks/use-contract-integration";
 
 const sellItemSchema = z.object({
   name: z.string().min(1, "Item name is required"),
@@ -33,6 +34,7 @@ export default function SellItem() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [images, setImages] = useState<string[]>([]);
+  const { mintAndListNFT, isTransacting, isWalletConnected } = useContractIntegration();
 
   const form = useForm<SellItemForm>({
     resolver: zodResolver(sellItemSchema),
