@@ -24,19 +24,33 @@ export default function SimpleWalletButton() {
   useEffect(() => {
     // Check if Leo Wallet is installed
     const checkWallet = () => {
-      const hasLeoWallet = !!(window as any).leoWallet;
-      setIsWalletInstalled(hasLeoWallet);
-      
-      // Check if already connected
-      if (hasLeoWallet) {
-        const savedAddress = localStorage.getItem('aleo_wallet_address');
-        if (savedAddress) {
-          setWalletState({
-            isConnected: true,
-            address: savedAddress,
-            isConnecting: false
+      try {
+        const leoWallet = (window as any).leoWallet;
+        const hasLeoWallet = !!(leoWallet && typeof leoWallet === 'object');
+        setIsWalletInstalled(hasLeoWallet);
+        
+        if (hasLeoWallet) {
+          console.log('Leo Wallet detected:', {
+            hasConnect: typeof leoWallet.connect === 'function',
+            hasRequestConnection: typeof leoWallet.requestConnection === 'function',
+            methods: Object.keys(leoWallet)
           });
         }
+        
+        // Check if already connected
+        if (hasLeoWallet) {
+          const savedAddress = localStorage.getItem('aleo_wallet_address');
+          if (savedAddress) {
+            setWalletState({
+              isConnected: true,
+              address: savedAddress,
+              isConnecting: false
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking wallet:', error);
+        setIsWalletInstalled(false);
       }
     };
 
@@ -60,17 +74,33 @@ export default function SimpleWalletButton() {
     try {
       const leoWallet = (window as any).leoWallet;
       
-      // Request connection
+      if (!leoWallet) {
+        throw new Error("Leo Wallet not found");
+      }
+
+      // Connect using the Leo Wallet API
       const response = await leoWallet.connect({
         appName: "zgallery",
-        requestPermissions: ["connect"]
+        network: "testnet3"
       });
 
-      if (response && response.address) {
-        localStorage.setItem('aleo_wallet_address', response.address);
+      console.log('Wallet response:', response);
+
+      // Get the public key/address from the wallet
+      let address = null;
+      if (leoWallet.publicKey) {
+        address = leoWallet.publicKey;
+      } else if (response && typeof response === 'string') {
+        address = response;
+      } else if (response && response.publicKey) {
+        address = response.publicKey;
+      }
+
+      if (address && typeof address === 'string') {
+        localStorage.setItem('aleo_wallet_address', address);
         setWalletState({
           isConnected: true,
-          address: response.address,
+          address: address,
           isConnecting: false
         });
         
@@ -79,7 +109,7 @@ export default function SimpleWalletButton() {
           description: "Successfully connected to Leo Wallet.",
         });
       } else {
-        throw new Error("Failed to get wallet address");
+        throw new Error("Failed to get wallet address from response");
       }
     } catch (error: any) {
       console.error('Wallet connection error:', error);
@@ -87,7 +117,7 @@ export default function SimpleWalletButton() {
       
       toast({
         title: "Connection Failed",
-        description: error.message || "Failed to connect to Leo Wallet.",
+        description: "Unable to connect to Leo Wallet. Please make sure it's installed and unlocked.",
         variant: "destructive",
       });
     }
@@ -149,11 +179,36 @@ export default function SimpleWalletButton() {
     );
   }
 
+  const connectDemo = () => {
+    const demoAddress = "aleo1demo1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefg";
+    localStorage.setItem('aleo_wallet_address', demoAddress);
+    setWalletState({
+      isConnected: true,
+      address: demoAddress,
+      isConnecting: false
+    });
+    
+    toast({
+      title: "Demo Mode Connected",
+      description: "Using demo wallet for testing marketplace functionality.",
+    });
+  };
+
   return (
-    <Button onClick={connectWallet} className="flex items-center gap-2">
-      <Wallet className="w-4 h-4" />
-      Connect Wallet
-    </Button>
+    <div className="flex items-center gap-2">
+      <Button onClick={connectWallet} className="flex items-center gap-2">
+        <Wallet className="w-4 h-4" />
+        Connect Wallet
+      </Button>
+      <Button
+        onClick={connectDemo}
+        variant="outline"
+        size="sm"
+        className="text-xs"
+      >
+        Demo Mode
+      </Button>
+    </div>
   );
 }
 
