@@ -109,26 +109,25 @@ export default function SellItem() {
         throw new Error('Wallet not connected');
       }
 
-      // Prepare inputs for the mint function
+      // Prepare inputs for the mint_private function
+      // The contract expects: data struct (metadata, brand, form) and edition scalar
+      const metadataField = `${Math.floor(Math.random() * 1000000)}field`;
+      const brandAddress = "aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc"; // Generic null address
+      const formField = `${data.category.toLowerCase().charCodeAt(0)}field`;
+      const editionScalar = `${Date.now()}scalar`;
+
       const inputs = [
-        `"${data.name}"`, // name as string
-        `"${data.description}"`, // description as string  
-        `"${data.brand}"`, // brand as string
-        `"${data.category}"`, // category as string
-        `"${JSON.stringify({
-          conservationStatus: data.conservationStatus,
-          identificationNumber: data.identificationNumber,
-          images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=800']
-        })}"` // metadata as string
+        `{ metadata: ${metadataField}, brand: ${brandAddress}, form: ${formField} }`, // data struct
+        editionScalar // edition scalar
       ];
 
       const fee = 100_000; // Fee in microcredits (0.1 Aleo)
 
       const aleoTransaction = Transaction.createTransaction(
         publicKey,
-        WalletAdapterNetwork.Testnet,
+        WalletAdapterNetwork.TestnetBeta,
         'zgallery_nft.aleo',
-        'mint',
+        'mint_private',
         inputs,
         fee
       );
