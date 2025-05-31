@@ -178,12 +178,18 @@ function App() {
     [],
   );
 
+  console.log({
+    wallets,
+    perm: DecryptPermission.AutoDecrypt,
+    network: WalletAdapterNetwork.TestnetBeta,
+  });
+
   return (
     <QueryClientProvider client={queryClient}>
       <WalletProvider
         wallets={wallets}
         decryptPermission={DecryptPermission.AutoDecrypt}
-        network={WalletAdapterNetwork.Testnet}
+        network={WalletAdapterNetwork.TestnetBeta}
         autoConnect={true}
         programs={[
           "credits.aleo",

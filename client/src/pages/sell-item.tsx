@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useSimpleWallet } from "@/components/simple-wallet-button";
+import { useWallet } from "@demox-labs/aleo-wallet-adapter-react";
 
 const sellItemSchema = z.object({
   name: z.string().min(1, "Item name is required"),
@@ -34,8 +34,9 @@ export default function SellItem() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [images, setImages] = useState<string[]>([]);
-  const { isConnected: isWalletConnected, address } = useSimpleWallet();
+  const { connected: isWalletConnected, publicKey } = useWallet();
   const [isTransacting, setIsTransacting] = useState(false);
+  const address = publicKey?.toString() || null;
 
   const form = useForm<SellItemForm>({
     resolver: zodResolver(sellItemSchema),

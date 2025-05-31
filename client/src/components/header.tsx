@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import SimpleWalletButton from "./simple-wallet-button";
+import { WalletMultiButton } from "@demox-labs/aleo-wallet-adapter-reactui";
 
 /**
  * Header component that displays the main navigation and wallet connection
@@ -9,11 +10,11 @@ export default function Header() {
   const [location] = useLocation();
 
   return (
-    <header 
+    <header
       className="border-b sticky top-0 z-50"
-      style={{ 
-        borderColor: 'hsl(var(--zg-border))',
-        backgroundColor: 'hsl(var(--zg-bg))'
+      style={{
+        borderColor: "hsl(var(--zg-border))",
+        backgroundColor: "hsl(var(--zg-bg))",
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,69 +22,70 @@ export default function Header() {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/">
-              <span 
+              <span
                 className="text-2xl font-bold tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
-                style={{ color: 'hsl(var(--zg-primary))' }}
+                style={{ color: "hsl(var(--zg-primary))" }}
               >
                 zgallery
               </span>
             </Link>
           </div>
-          
+
           {/* Navigation */}
           <nav className="hidden md:flex space-x-8">
             <Link href="/marketplace">
-              <span 
+              <span
                 className={`font-medium transition-colors duration-200 cursor-pointer ${
-                  location === "/" || location === "/marketplace" 
-                    ? "text-primary" 
+                  location === "/" || location === "/marketplace"
+                    ? "text-primary"
                     : "hover:text-primary"
                 }`}
-                style={{ 
-                  color: location === "/" || location === "/marketplace" 
-                    ? 'hsl(var(--zg-primary))' 
-                    : 'hsl(var(--zg-muted))'
+                style={{
+                  color:
+                    location === "/" || location === "/marketplace"
+                      ? "hsl(var(--zg-primary))"
+                      : "hsl(var(--zg-muted))",
                 }}
               >
                 Marketplace
               </span>
             </Link>
             <Link href="/sell">
-              <span 
+              <span
                 className={`font-medium transition-colors duration-200 cursor-pointer ${
-                  location === "/sell" 
-                    ? "text-primary" 
-                    : "hover:text-primary"
+                  location === "/sell" ? "text-primary" : "hover:text-primary"
                 }`}
-                style={{ 
-                  color: location === "/sell" 
-                    ? 'hsl(var(--zg-primary))' 
-                    : 'hsl(var(--zg-muted))'
+                style={{
+                  color:
+                    location === "/sell"
+                      ? "hsl(var(--zg-primary))"
+                      : "hsl(var(--zg-muted))",
                 }}
               >
                 Sell Item
               </span>
             </Link>
             <Link href="/creator">
-              <span 
+              <span
                 className={`font-medium transition-colors duration-200 cursor-pointer ${
-                  location === "/creator" 
-                    ? "text-primary" 
+                  location === "/creator"
+                    ? "text-primary"
                     : "hover:text-primary"
                 }`}
-                style={{ 
-                  color: location === "/creator" 
-                    ? 'hsl(var(--zg-primary))' 
-                    : 'hsl(var(--zg-muted))'
+                style={{
+                  color:
+                    location === "/creator"
+                      ? "hsl(var(--zg-primary))"
+                      : "hsl(var(--zg-muted))",
                 }}
               >
                 Creator
               </span>
             </Link>
           </nav>
-          
+
           {/* Wallet Connection */}
-          <SimpleWalletButton />
+          <WalletMultiButton />
         </div>
       </div>
     </header>
