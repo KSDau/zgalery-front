@@ -36,7 +36,7 @@ const sellItemSchema = z.object({
   price: z.string().min(1, "Price is required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   category: z.string().min(1, "Category is required"),
-  brand: z.string().min(1, "Brand is required"),
+  brand: "aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc",
   conservationStatus: z.string().min(1, "Conservation status is required"),
   identificationNumber: z.string().min(1, "Identification number is required"),
 });
@@ -387,7 +387,9 @@ export default function SellItem() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="rolex">Rolex</SelectItem>
+                          <SelectItem value="aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc">
+                            Rolex
+                          </SelectItem>
                           <SelectItem value="cartier">Cartier</SelectItem>
                           <SelectItem value="tiffany">Tiffany & Co.</SelectItem>
                           <SelectItem value="hermes">Hermès</SelectItem>
