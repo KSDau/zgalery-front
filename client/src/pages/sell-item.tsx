@@ -34,7 +34,7 @@ export default function SellItem() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [images, setImages] = useState<string[]>([]);
-  const { connected: isWalletConnected, publicKey } = useWallet();
+  const { connected: isWalletConnected, publicKey, requestTransaction } = useWallet();
   const [isTransacting, setIsTransacting] = useState(false);
   const address = publicKey?.toString() || null;
 
@@ -84,7 +84,36 @@ export default function SellItem() {
     setIsTransacting(true);
 
     try {
-      // Create NFT data structure for the backend
+      // Step 1: Request wallet transaction to mint NFT on Aleo blockchain
+      const mintTransaction = {
+        programId: "zgallery_nft.aleo",
+        functionName: "mint",
+        inputs: [
+          data.name, // name
+          data.description, // description
+          data.brand, // brand
+          data.category, // category
+          JSON.stringify({
+            conservationStatus: data.conservationStatus,
+            identificationNumber: data.identificationNumber,
+            images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=800']
+          }) // metadata
+        ],
+        fee: 0.1 // Fee in Aleo credits
+      };
+
+      toast({
+        title: "Please Sign Transaction",
+        description: "Confirm the NFT minting transaction in your Leo Wallet.",
+      });
+
+      const transactionResponse = await requestTransaction(mintTransaction);
+      
+      if (!transactionResponse) {
+        throw new Error('Transaction was rejected or failed');
+      }
+
+      // Step 2: Create NFT record in backend after successful blockchain transaction
       const nftData = {
         owner: address || "unknown",
         metadata: JSON.stringify({
@@ -98,7 +127,7 @@ export default function SellItem() {
         brand: data.brand,
         form: data.category.toLowerCase(),
         edition: `edition_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        nftCommit: `commit_${Date.now()}_${Math.random().toString(36).substr(2, 15)}`,
+        nftCommit: transactionResponse.transactionId || `commit_${Date.now()}_${Math.random().toString(36).substr(2, 15)}`,
         isPrivate: true
       };
 
@@ -110,7 +139,7 @@ export default function SellItem() {
       });
 
       if (!nftResponse.ok) {
-        throw new Error('Failed to create NFT');
+        throw new Error('Failed to create NFT record');
       }
 
       const nft = await nftResponse.json();
@@ -124,8 +153,11 @@ export default function SellItem() {
         seller: address || "unknown",
         price: priceInMicrocredits,
         listingPublicKey: `pubkey_${Math.random().toString(36).substr(2, 20)}`,
-        purchased: false,
-        approved: false
+        purchased: null,
+        approved: null,
+        buyerCommit: null,
+        purchaseN: null,
+        buyer: null
       };
 
       const listingResponse = await fetch('/api/listings', {
