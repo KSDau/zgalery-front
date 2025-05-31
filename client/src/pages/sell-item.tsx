@@ -26,14 +26,17 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useWallet } from "@demox-labs/aleo-wallet-adapter-react";
-import { Transaction, WalletAdapterNetwork } from "@demox-labs/aleo-wallet-adapter-base";
+import {
+  Transaction,
+  WalletAdapterNetwork,
+} from "@demox-labs/aleo-wallet-adapter-base";
 
 const sellItemSchema = z.object({
   name: z.string().min(1, "Item name is required"),
   price: z.string().min(1, "Price is required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   category: z.string().min(1, "Category is required"),
-  brand: z.string().min(1, "Brand is required"),
+  brand: "aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc",
   conservationStatus: z.string().min(1, "Conservation status is required"),
   identificationNumber: z.string().min(1, "Identification number is required"),
 });
@@ -106,30 +109,31 @@ export default function SellItem() {
       console.log("Mint transaction:", data);
 
       if (!publicKey) {
-        throw new Error('Wallet not connected');
+        throw new Error("Wallet not connected");
       }
 
       // Prepare inputs for the mint_private function
       // The contract expects: data struct (metadata, brand, form) and edition scalar
       const metadataField = `${Math.floor(Math.random() * 1000000)}field`;
-      const brandAddress = "aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc"; // Generic null address
+      const brandAddress =
+        "aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc"; // Generic null address
       const formField = `${data.category.toLowerCase().charCodeAt(0)}field`;
       const editionScalar = `${Date.now()}scalar`;
 
       const inputs = [
         `{ metadata: ${metadataField}, brand: ${brandAddress}, form: ${formField} }`, // data struct
-        editionScalar // edition scalar
+        editionScalar, // edition scalar
       ];
 
-      const fee = 100_000; // Fee in microcredits (0.1 Aleo)
+      const fee = 10_000; // Fee in microcredits (0.01 Aleo) - reduced for testing
 
       const aleoTransaction = Transaction.createTransaction(
         publicKey,
         WalletAdapterNetwork.TestnetBeta,
-        'zgallery_nft.aleo',
-        'mint_private',
+        "zgallery_nft.aleo",
+        "mint_private",
         inputs,
-        fee
+        fee,
       );
 
       toast({
@@ -138,7 +142,7 @@ export default function SellItem() {
       });
 
       if (!requestTransaction) {
-        throw new Error('Transaction function not available');
+        throw new Error("Transaction function not available");
       }
 
       const transactionId = await requestTransaction(aleoTransaction);
