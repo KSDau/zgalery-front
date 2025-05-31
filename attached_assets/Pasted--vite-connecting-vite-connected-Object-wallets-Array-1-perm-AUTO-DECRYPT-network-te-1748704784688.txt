@@ -1,0 +1,14 @@
+[vite] connecting...
+[vite] connected.
+Object {wallets: Array(1), perm: "AUTO_DECRYPT", network: "testnetbeta"}
+keyValidator._parse is not a function
+at _ZodObject._parse (https://fabc6c39-f8a0-459a-b2b7-22e7d934d8d2-00-4gzcmn0bl5fg.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/zod.js?v=7d2addbd:2296:29)
+at _ZodObject.safeParseAsync (https://fabc6c39-f8a0-459a-b2b7-22e7d934d8d2-00-4gzcmn0bl5fg.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/zod.js?v=7d2addbd:663:35)
+at _ZodObject.parseAsync (https://fabc6c39-f8a0-459a-b2b7-22e7d934d8d2-00-4gzcmn0bl5fg.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/zod.js?v=7d2addbd:645:31)
+at https://fabc6c39-f8a0-459a-b2b7-22e7d934d8d2-00-4gzcmn0bl5fg.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@hookform_resolvers_zod.js?v=7d2addbd:61:83
+at Object.resolver (https://fabc6c39-f8a0-459a-b2b7-22e7d934d8d2-00-4gzcmn0bl5fg.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@hookform_resolvers_zod.js?v=7d2addbd:68:8)
+at _runSchema (https://fabc6c39-f8a0-459a-b2b7-22e7d934d8d2-00-4gzcmn0bl5fg.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=7d2addbd:1036:35)
+at https://fabc6c39-f8a0-459a-b2b7-22e7d934d8d2-00-4gzcmn0bl5fg.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=7d2addbd:1448:40
+at HTMLUnknownElement.callCallback2 (https://fabc6c39-f8a0-459a-b2b7-22e7d934d8d2-00-4gzcmn0bl5fg.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=7d2addbd:3674:22)
+at Object.invokeGuardedCallbackDev (https://fabc6c39-f8a0-459a-b2b7-22e7d934d8d2-00-4gzcmn0bl5fg.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=7d2addbd:3699:24)
+at invokeGuardedCallback (https://fabc6c39-f8a0-459a-b2b7-22e7d934d8d2-00-4gzcmn0bl5fg.janeway.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=7d2addbd:3733:39)

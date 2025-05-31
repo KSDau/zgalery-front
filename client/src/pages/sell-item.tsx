@@ -36,7 +36,7 @@ const sellItemSchema = z.object({
   price: z.string().min(1, "Price is required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   category: z.string().min(1, "Category is required"),
-  brand: "aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc",
+  brand: z.string().min(1, "Brand is required"),
   conservationStatus: z.string().min(1, "Conservation status is required"),
   identificationNumber: z.string().min(1, "Identification number is required"),
 });
@@ -125,7 +125,7 @@ export default function SellItem() {
         editionScalar, // edition scalar
       ];
 
-      const fee = 10_000; // Fee in microcredits (0.01 Aleo) - reduced for testing
+      const fee = 100_000; // Fee in microcredits (0.1 Aleo)
 
       const aleoTransaction = Transaction.createTransaction(
         publicKey,
