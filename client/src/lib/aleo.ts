@@ -1,4 +1,4 @@
-import { Account, AleoKeyProvider, AleoNetworkClient, NetworkRecordProvider, ProgramManager } from '@aleohq/sdk';
+import { AleoKeyProvider, AleoNetworkClient, NetworkRecordProvider, ProgramManager } from '@aleohq/sdk';
 
 /**
  * Aleo network configuration for testnet
@@ -38,7 +38,7 @@ export class AleoProvider {
   private networkClient: AleoNetworkClient | null = null;
   private recordProvider: NetworkRecordProvider | null = null;
   private programManager: ProgramManager | null = null;
-  private account: Account | null = null;
+  private connectedAddress: string | null = null;
 
   constructor() {
     this.initializeProvider();
@@ -49,14 +49,7 @@ export class AleoProvider {
    */
   private async initializeProvider() {
     try {
-      this.keyProvider = new AleoKeyProvider();
       this.networkClient = new AleoNetworkClient(ALEO_CONFIG.TESTNET_URL);
-      this.recordProvider = new NetworkRecordProvider(this.account!, this.networkClient);
-      this.programManager = new ProgramManager(
-        ALEO_CONFIG.TESTNET_URL,
-        this.keyProvider,
-        this.recordProvider
-      );
     } catch (error) {
       console.error('Failed to initialize Aleo provider:', error);
     }
