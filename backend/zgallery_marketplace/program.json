@@ -1,0 +1,20 @@
+{
+  "program": "zgallery_marketplace.aleo",
+  "version": "0.1.0",
+  "description": "",
+  "license": "MIT",
+  "dependencies": [
+    {
+      "name": "zgallery_nft.aleo",
+      "location": "local",
+      "network": null,
+      "path": "../zgallery_nft"
+    },
+    {
+      "name": "credits.aleo",
+      "location": "network",
+      "network": "testnet",
+      "path": null
+    }
+  ]
+}

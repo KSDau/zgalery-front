@@ -1,0 +1,13 @@
+[[package]]
+name = "zgallery_nft.aleo"
+location = "local"
+path = 'D:\Dauphine\Aleo\Project\zgallery\zgallery_marketplace\../zgallery_nft'
+checksum = "b291377399bf7fcbec317977c3cacb03fa8543b82dfb130c14918715390a55a1"
+dependencies = []
+
+[[package]]
+name = "credits.aleo"
+network = "testnet"
+location = "network"
+checksum = "67fd59cc0af50f7870bafa9937ba9ef0a9c1eec9a91afdb9c929ceae06189efd"
+dependencies = []

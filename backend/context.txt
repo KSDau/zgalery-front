@@ -1,0 +1,203 @@
+# ZGallery Integration Documentation
+
+## Overview
+ZGallery is a decentralized NFT marketplace built on Aleo blockchain. The system consists of two main components:
+1. NFT Contract (`zgallery_nft`)
+2. Marketplace Contract (`zgallery_marketplace`)
+
+## Core Components
+
+### 1. NFT Contract (`zgallery_nft.aleo`)
+
+#### Data Structures
+```typescript
+interface NFTData {
+    metadata: string;  // Field type in Aleo
+    brand: string;     // Address type in Aleo
+    form: string;      // Field type in Aleo
+}
+
+interface NFT {
+    owner: string;     // Private address
+    data: NFTData;
+    edition: string;   // Private scalar
+}
+
+interface NFTView {
+    owner: string;     // Private address
+    data: NFTData;
+    edition: string;   // Private scalar
+    is_view: boolean;  // Public boolean
+}
+```
+
+#### Key Functions
+1. **Mint NFT**
+   - Function: `mint_private(nft_data: NFTData, nft_edition: string)`
+   - Returns: `(NFT, Future)`
+   - Purpose: Creates a new NFT with private ownership
+
+2. **Transfer Functions**
+   - `transfer_private(nft: NFT, to: string)`: Private to private transfer
+   - `transfer_private_to_public(nft: NFT, to: string)`: Private to public transfer
+   - `transfer_public(old_nft_view: NFTView, to: string)`: Public to public transfer
+   - `transfer_public_to_private(nft_view: NFTView, to: string)`: Public to private transfer
+
+### 2. Marketplace Contract (`zgallery_marketplace.aleo`)
+
+#### Data Structures
+```typescript
+interface Listing {
+    nft_commit: string;        // Field type in Aleo
+    listing_public_key: string; // Group type in Aleo
+    price: number;             // u64 type in Aleo
+    purchased: boolean;
+    buyer_c: string;           // Field type in Aleo
+    purchase_N: string;        // Group type in Aleo
+    approved: boolean;
+}
+
+interface ReceiptSeller {
+    owner: string;             // Address type in Aleo
+    listing_id: string;        // Field type in Aleo
+    listing_private_key: string; // Scalar type in Aleo
+}
+
+interface ReceiptBuyer {
+    owner: string;             // Address type in Aleo
+    listing_id: string;        // Field type in Aleo
+    seller: string;            // Address type in Aleo
+}
+```
+
+#### Key Functions
+1. **List NFT**
+   - Function: `list(nft: NFT, price: number, rand: string)`
+   - Returns: `(ReceiptSeller, Future)`
+   - Purpose: Lists an NFT for sale in the marketplace
+
+2. **Purchase NFT**
+   - Function: `purchase(aleo_credits: credits, nft_commit: string, price: number, rand: string)`
+   - Returns: `(credits, Future)`
+   - Purpose: Initiates the purchase of a listed NFT
+
+3. **Approve Sale**
+   - Function: `approve(receipt_seller: ReceiptSeller, old_nft_view: NFTView, c: string, N: string)`
+   - Returns: `(ReceiptBuyer, NFTView, Future)`
+   - Purpose: Approves the transfer of NFT to buyer after purchase
+
+4. **Cancel Listing**
+   - Function: `cancel(receipt_seller: ReceiptSeller, nft_view: NFTView)`
+   - Returns: `(NFT, Future)`
+   - Purpose: Cancels an active listing
+
+5. **Reject Sale**
+   - Function: `reject(receipt_seller: ReceiptSeller, price: number, c: string, N: string)`
+   - Returns: `(ReceiptSeller, credits, Future)`
+   - Purpose: Rejects a purchase and refunds the buyer
+
+## Frontend Integration Guide
+
+### 1. Setup
+```typescript
+// Required dependencies
+import { AleoProvider } from '@aleohq/sdk';
+import { ZGalleryNFT } from './contracts/ZGalleryNFT';
+import { ZGalleryMarketplace } from './contracts/ZGalleryMarketplace';
+```
+
+### 2. NFT Operations
+```typescript
+// Mint new NFT
+async function mintNFT(metadata: string, brand: string, form: string) {
+    const nftData = {
+        metadata,
+        brand,
+        form
+    };
+    const edition = generateRandomScalar(); // Implement secure random generation
+    return await ZGalleryNFT.mint_private(nftData, edition);
+}
+
+// List NFT for sale
+async function listNFT(nft: NFT, price: number) {
+    const rand = generateRandomScalar();
+    return await ZGalleryMarketplace.list(nft, price, rand);
+}
+
+// Purchase NFT
+async function purchaseNFT(nftCommit: string, price: number) {
+    const rand = generateRandomScalar();
+    const credits = await getAleoCredits(price);
+    return await ZGalleryMarketplace.purchase(credits, nftCommit, price, rand);
+}
+```
+
+### 3. Event Handling
+```typescript
+// Listen for listing events
+ZGalleryMarketplace.on('ListingCreated', (listing) => {
+    // Update UI with new listing
+});
+
+// Listen for purchase events
+ZGalleryMarketplace.on('PurchaseInitiated', (purchase) => {
+    // Update UI with purchase status
+});
+
+// Listen for transfer events
+ZGalleryNFT.on('Transfer', (transfer) => {
+    // Update UI with new ownership
+});
+```
+
+### 4. Error Handling
+```typescript
+try {
+    await purchaseNFT(nftCommit, price);
+} catch (error) {
+    if (error.code === 'INSUFFICIENT_FUNDS') {
+        // Handle insufficient funds
+    } else if (error.code === 'NFT_NOT_FOUND') {
+        // Handle NFT not found
+    } else {
+        // Handle other errors
+    }
+}
+```
+
+## Security Considerations
+
+1. **Private Key Management**
+   - Never expose private keys in the frontend
+   - Use secure key management solutions
+   - Implement proper encryption for sensitive data
+
+2. **Transaction Verification**
+   - Always verify transaction status
+   - Implement proper error handling
+   - Use confirmation dialogs for important actions
+
+3. **Data Privacy**
+   - Handle private data appropriately
+   - Implement proper access controls
+   - Use encryption for sensitive information
+
+## Best Practices
+
+1. **State Management**
+   - Implement proper state management for NFT listings
+   - Cache frequently accessed data
+   - Implement proper loading states
+
+2. **User Experience**
+   - Provide clear feedback for all actions
+   - Implement proper loading indicators
+   - Handle edge cases gracefully
+
+3. **Performance**
+   - Implement proper caching strategies
+   - Optimize API calls
+   - Use pagination for large datasets
+
+This documentation provides a foundation for integrating the ZGallery marketplace into a frontend application. The actual implementation may require additional considerations based on specific requirements and use cases.
