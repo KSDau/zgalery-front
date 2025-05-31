@@ -2,12 +2,18 @@ import { useWallet } from "@demox-labs/aleo-wallet-adapter-react";
 import { WalletMultiButton } from "@demox-labs/aleo-wallet-adapter-reactui";
 import { Button } from "@/components/ui/button";
 import { Wallet } from "lucide-react";
+import { useEffect } from "react";
 
 /**
  * Aleo wallet connection button using the official wallet adapter
  */
 export default function AleoWalletButton() {
-  const { publicKey, connecting, connected } = useWallet();
+  const { publicKey, connecting, connected, wallets, select, wallet } = useWallet();
+
+  // Debug wallet state
+  useEffect(() => {
+    console.log('Wallet state:', { publicKey, connecting, connected, wallets: wallets.length, selectedWallet: wallet?.adapter.name });
+  }, [publicKey, connecting, connected, wallets, wallet]);
 
   if (connected && publicKey) {
     return (
@@ -33,5 +39,39 @@ export default function AleoWalletButton() {
     );
   }
 
-  return <WalletMultiButton />;
+  // Custom button for Leo Wallet if detected but not connected
+  const handleConnect = async () => {
+    try {
+      console.log('Attempting to connect to wallet...');
+      if (wallets.length > 0) {
+        const leoWallet = wallets.find(w => w.adapter.name === 'Leo Wallet');
+        if (leoWallet) {
+          console.log('Selecting Leo Wallet');
+          select(leoWallet.adapter.name);
+          await leoWallet.adapter.connect();
+        }
+      }
+    } catch (error) {
+      console.error('Wallet connection error:', error);
+    }
+  };
+
+  return (
+    <div className="flex gap-2">
+      <WalletMultiButton />
+      {wallets.length > 0 && !connected && (
+        <Button 
+          onClick={handleConnect}
+          className="ml-2"
+          style={{ 
+            backgroundColor: 'hsl(var(--zg-primary))',
+            color: 'white'
+          }}
+        >
+          <Wallet className="w-4 h-4 mr-2" />
+          Connect Leo Wallet
+        </Button>
+      )}
+    </div>
+  );
 }
