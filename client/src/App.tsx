@@ -3,6 +3,11 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { WalletProvider } from "@demox-labs/aleo-wallet-adapter-react";
+import { WalletModalProvider } from "@demox-labs/aleo-wallet-adapter-reactui";
+import { LeoWalletAdapter } from "@demox-labs/aleo-wallet-adapter-leo";
+import { DecryptPermission, WalletAdapterNetwork } from "@demox-labs/aleo-wallet-adapter-base";
+import { useMemo } from "react";
 import NotFound from "@/pages/not-found";
 import Marketplace from "@/pages/marketplace";
 import ItemDetail from "@/pages/item-detail";
@@ -11,6 +16,9 @@ import CreatorDashboard from "@/pages/creator-dashboard";
 import AuctionDetail from "@/pages/auction-detail";
 import UserProfile from "@/pages/user-profile";
 import Header from "@/components/header";
+
+// Import wallet adapter styles
+import "@demox-labs/aleo-wallet-adapter-reactui/styles.css";
 
 function Router() {
   return (
@@ -87,12 +95,30 @@ function Router() {
 }
 
 function App() {
+  const wallets = useMemo(
+    () => [
+      new LeoWalletAdapter({
+        appName: "zgallery",
+      }),
+    ],
+    []
+  );
+
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <WalletProvider
+        wallets={wallets}
+        decryptPermission={DecryptPermission.UponRequest}
+        network={WalletAdapterNetwork.Testnet}
+        autoConnect
+      >
+        <WalletModalProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </WalletModalProvider>
+      </WalletProvider>
     </QueryClientProvider>
   );
 }
