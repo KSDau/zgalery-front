@@ -1,115 +1,16 @@
-import { useState, useEffect } from "react";
+import { useWallet } from "@demox-labs/aleo-wallet-adapter-react";
+import { WalletMultiButton } from "@demox-labs/aleo-wallet-adapter-reactui";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, AlertCircle, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 /**
- * Simplified Aleo wallet connection interface
- */
-interface AleoWalletConnection {
-  isConnected: boolean;
-  address: string | null;
-  isConnecting: boolean;
-  error: string | null;
-  connectWallet: () => Promise<void>;
-  disconnectWallet: () => void;
-}
-
-/**
- * Aleo wallet connection component that handles wallet detection and connection
+ * Aleo wallet connection component using Leo wallet adapter
  */
 export default function AleoWalletConnection() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [address, setAddress] = useState<string | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isWalletAvailable, setIsWalletAvailable] = useState(false);
+  const { wallet, publicKey, connecting, connected, disconnect } = useWallet();
   const { toast } = useToast();
-
-  /**
-   * Check if Aleo wallet is available in the browser
-   */
-  useEffect(() => {
-    const checkWalletAvailability = () => {
-      // Check for common Aleo wallet extensions
-      const hasLeoWallet = !!(window as any).leoWallet;
-      const hasAleoWallet = !!(window as any).aleo;
-      setIsWalletAvailable(hasLeoWallet || hasAleoWallet);
-    };
-
-    checkWalletAvailability();
-    
-    // Check periodically in case wallet is installed after page load
-    const interval = setInterval(checkWalletAvailability, 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  /**
-   * Connect to Aleo wallet
-   */
-  const connectWallet = async () => {
-    if (!isWalletAvailable) {
-      setError('No Aleo wallet found. Please install Leo Wallet or another Aleo-compatible wallet.');
-      toast({
-        title: "Wallet Not Found",
-        description: "Please install Leo Wallet or another Aleo-compatible wallet extension.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsConnecting(true);
-    setError(null);
-
-    try {
-      // Try Leo Wallet first
-      const wallet = (window as any).leoWallet || (window as any).aleo;
-      
-      if (wallet) {
-        // Request connection
-        const response = await wallet.request({ method: 'connect' });
-        const walletAddress = response?.address || response;
-        
-        if (walletAddress) {
-          setAddress(walletAddress);
-          setIsConnected(true);
-          toast({
-            title: "Wallet Connected",
-            description: `Successfully connected to ${formatAddress(walletAddress)}`,
-          });
-        } else {
-          throw new Error('No address returned from wallet');
-        }
-      } else {
-        throw new Error('Wallet not accessible');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to connect wallet';
-      setError(errorMessage);
-      toast({
-        title: "Connection Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  /**
-   * Disconnect from Aleo wallet
-   */
-  const disconnectWallet = () => {
-    setAddress(null);
-    setIsConnected(false);
-    setError(null);
-    toast({
-      title: "Wallet Disconnected",
-      description: "Successfully disconnected from wallet",
-    });
-  };
 
   /**
    * Format Aleo address for display
@@ -126,22 +27,25 @@ export default function AleoWalletConnection() {
     return /^aleo1[a-z0-9]{58}$/.test(addr);
   };
 
-  if (!isWalletAvailable) {
-    return (
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          onClick={() => window.open('https://leo.app/', '_blank')}
-          className="text-sm"
-        >
-          <AlertCircle className="w-4 h-4 mr-2" />
-          Install Leo Wallet
-        </Button>
-      </div>
-    );
-  }
+  // Handle disconnect
+  const handleDisconnect = async () => {
+    try {
+      await disconnect();
+      toast({
+        title: "Wallet Disconnected",
+        description: "Successfully disconnected from wallet",
+      });
+    } catch (error) {
+      toast({
+        title: "Disconnect Failed",
+        description: "Failed to disconnect wallet",
+        variant: "destructive",
+      });
+    }
+  };
 
-  if (isConnected && address) {
+  // If connected, show address and disconnect button
+  if (connected && publicKey) {
     return (
       <div className="flex items-center gap-2">
         <Badge 
@@ -154,13 +58,13 @@ export default function AleoWalletConnection() {
         >
           <CheckCircle2 className="w-3 h-3" />
           <span className="font-mono text-xs">
-            {isValidAleoAddress(address) ? formatAddress(address) : address}
+            {isValidAleoAddress(publicKey) ? formatAddress(publicKey) : publicKey}
           </span>
         </Badge>
         <Button
           variant="ghost"
           size="sm"
-          onClick={disconnectWallet}
+          onClick={handleDisconnect}
           className="text-xs"
         >
           Disconnect
@@ -169,24 +73,25 @@ export default function AleoWalletConnection() {
     );
   }
 
+  // Use the wallet adapter's built-in button for connection
   return (
     <div className="flex items-center gap-2">
-      <Button
-        onClick={connectWallet}
-        disabled={isConnecting}
-        variant="outline"
-        className="text-sm"
-        style={{ 
-          borderColor: 'hsl(var(--zg-border))',
-          color: 'hsl(var(--zg-primary))'
+      <WalletMultiButton 
+        style={{
+          backgroundColor: 'transparent',
+          border: '1px solid hsl(var(--zg-border))',
+          color: 'hsl(var(--zg-primary))',
+          fontSize: '14px',
+          padding: '8px 16px',
+          borderRadius: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
         }}
-      >
-        <Wallet className="w-4 h-4 mr-2" />
-        {isConnecting ? 'Connecting...' : 'Connect Aleo Wallet'}
-      </Button>
-      {error && (
-        <Badge variant="destructive" className="text-xs">
-          Connection Failed
+      />
+      {connecting && (
+        <Badge variant="outline" className="text-xs">
+          Connecting...
         </Badge>
       )}
     </div>
