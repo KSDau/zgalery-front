@@ -181,7 +181,7 @@ export default function CreatorDashboard() {
 
         {/* Tabs Section */}
         <Tabs defaultValue="items" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="h-10 items-center justify-center rounded-md bg-muted p-1 grid w-full grid-cols-3 text-[#f9fafb]">
             <TabsTrigger value="items">My Items</TabsTrigger>
             <TabsTrigger value="brands">My Brands</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
