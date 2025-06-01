@@ -63,7 +63,7 @@ export default function MintCollection() {
           saleType: "fixed",
           status: "listed"
         };
-        promises.push(apiRequest("/api/items", { method: "POST", body: itemData }));
+        promises.push(apiRequest("/api/items", "POST", itemData));
       }
       return Promise.all(promises);
     },

@@ -8,6 +8,7 @@ import Marketplace from "@/pages/marketplace";
 import ItemDetail from "@/pages/item-detail";
 import SellItem from "@/pages/sell-item";
 import CreatorDashboard from "@/pages/creator-dashboard";
+import MintCollection from "@/pages/mint-collection";
 import AuctionDetail from "@/pages/auction-detail";
 import UserProfile from "@/pages/user-profile";
 import Header from "@/components/header";
@@ -22,6 +23,7 @@ function Router() {
         <Route path="/sell" component={SellItem} />
         <Route path="/creator-dashboard" component={CreatorDashboard} />
         <Route path="/creator" component={CreatorDashboard} />
+        <Route path="/mint-collection" component={MintCollection} />
         <Route path="/profile" component={UserProfile} />
         <Route path="/item/:id" component={ItemDetail} />
         <Route path="/auction/:id" component={AuctionDetail} />

@@ -252,7 +252,7 @@ export default function CreatorDashboard() {
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 <img
-                                  src={item.images[0] || "https://images.unsplash.com/photo-1611652022419-a9419f74343d"}
+                                  src={(item.images && item.images[0]) || "https://images.unsplash.com/photo-1611652022419-a9419f74343d"}
                                   alt={item.name}
                                   className="w-12 h-12 rounded-lg object-cover"
                                 />
