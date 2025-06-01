@@ -36,7 +36,12 @@ const brandFormSchema = z.object({
   contactEmail: z.string().email("Please enter a valid email").optional().or(z.literal("")),
 });
 
+const brandAuthSchema = z.object({
+  authKey: z.string().min(1, "Authentication key is required"),
+});
+
 type BrandFormData = z.infer<typeof brandFormSchema>;
+type BrandAuthData = z.infer<typeof brandAuthSchema>;
 
 /**
  * CreatorDashboard component that allows brands to manage their luxury items,
@@ -48,6 +53,8 @@ export default function CreatorDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isCreateBrandOpen, setIsCreateBrandOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authenticatedBrand, setAuthenticatedBrand] = useState<Brand | null>(null);
   const queryClient = useQueryClient();
 
   const form = useForm<BrandFormData>({
