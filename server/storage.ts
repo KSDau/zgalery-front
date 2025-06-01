@@ -14,7 +14,6 @@ export interface IStorage {
   getBrand(id: number): Promise<Brand | undefined>;
   getBrandsByOwnerId(ownerId: number): Promise<Brand[]>;
   getAllBrands(): Promise<Brand[]>;
-  getBrandByAuthKey(authKey: string): Promise<Brand | undefined>;
   createBrand(brand: InsertBrand): Promise<Brand>;
   updateBrand(id: number, brand: Partial<InsertBrand>): Promise<Brand | undefined>;
 
@@ -79,11 +78,6 @@ export class DatabaseStorage implements IStorage {
 
   async getAllBrands(): Promise<Brand[]> {
     return await db.select().from(brands);
-  }
-
-  async getBrandByAuthKey(authKey: string): Promise<Brand | undefined> {
-    const [brand] = await db.select().from(brands).where(eq(brands.authKey, authKey));
-    return brand || undefined;
   }
 
   async createBrand(insertBrand: InsertBrand): Promise<Brand> {

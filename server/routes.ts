@@ -44,25 +44,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/brands/auth", async (req: Request, res: Response) => {
-    try {
-      const { authKey } = req.body;
-      if (!authKey) {
-        return res.status(400).json({ error: "Authentication key is required" });
-      }
-      
-      const brand = await storage.getBrandByAuthKey(authKey);
-      if (!brand) {
-        return res.status(401).json({ error: "Invalid authentication key" });
-      }
-      
-      res.json(brand);
-    } catch (error: any) {
-      console.error("Error authenticating brand:", error);
-      res.status(500).json({ error: "Authentication failed" });
-    }
-  });
-
   app.get("/api/brands/:id/items", async (req: Request, res: Response) => {
     try {
       const brandId = parseInt(req.params.id);

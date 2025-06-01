@@ -17,11 +17,9 @@ export const brands = pgTable("brands", {
   name: text("name").unique().notNull(),
   description: text("description"),
   website: text("website"),
-  contactEmail: text("contact_email"),
   logo: text("logo"),
   verified: boolean("verified").default(false),
   ownerId: integer("owner_id").references(() => users.id).notNull(),
-  authKey: text("auth_key").unique(), // For brand authentication
   createdAt: timestamp("created_at").defaultNow(),
 });
 

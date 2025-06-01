@@ -36,12 +36,7 @@ const brandFormSchema = z.object({
   contactEmail: z.string().email("Please enter a valid email").optional().or(z.literal("")),
 });
 
-const brandAuthSchema = z.object({
-  authKey: z.string().min(1, "Authentication key is required"),
-});
-
 type BrandFormData = z.infer<typeof brandFormSchema>;
-type BrandAuthData = z.infer<typeof brandAuthSchema>;
 
 /**
  * CreatorDashboard component that allows brands to manage their luxury items,
@@ -53,8 +48,6 @@ export default function CreatorDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isCreateBrandOpen, setIsCreateBrandOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authenticatedBrand, setAuthenticatedBrand] = useState<Brand | null>(null);
   const queryClient = useQueryClient();
 
   const form = useForm<BrandFormData>({
@@ -64,13 +57,6 @@ export default function CreatorDashboard() {
       description: "",
       website: "",
       contactEmail: "",
-    },
-  });
-
-  const authForm = useForm<BrandAuthData>({
-    resolver: zodResolver(brandAuthSchema),
-    defaultValues: {
-      authKey: "",
     },
   });
 
@@ -126,51 +112,11 @@ export default function CreatorDashboard() {
     createBrandMutation.mutate(data);
   };
 
-  // Brand authentication mutation
-  const authBrandMutation = useMutation({
-    mutationFn: async (authData: BrandAuthData) => {
-      const response = await fetch(`/api/brands/auth`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(authData),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Invalid authentication key');
-      }
-      
-      return response.json();
-    },
-    onSuccess: (brand: Brand) => {
-      setAuthenticatedBrand(brand);
-      setIsAuthModalOpen(false);
-      authForm.reset();
-      toast({
-        title: "Authentication Successful",
-        description: `Welcome back, ${brand.name}! You can now manage your items and customers.`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Authentication Failed",
-        description: error.message || "Invalid authentication key",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleBrandAuth = (data: BrandAuthData) => {
-    authBrandMutation.mutate(data);
-  };
-
-  // Filter items by search and status (and brand if authenticated)
+  // Filter items by search and status
   const filteredItems = items.filter((item: LuxuryItem) => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
-    const matchesBrand = authenticatedBrand ? item.brandId === authenticatedBrand.id : true;
-    return matchesSearch && matchesStatus && matchesBrand;
+    return matchesSearch && matchesStatus;
   });
 
   // Calculate analytics
@@ -215,107 +161,12 @@ export default function CreatorDashboard() {
               Back to Marketplace
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {authenticatedBrand ? `${authenticatedBrand.name} Dashboard` : 'Creator Dashboard'}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {authenticatedBrand 
-                  ? `Manage ${authenticatedBrand.name} items and customer relationships`
-                  : 'Manage your brands and luxury items'
-                }
-              </p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Creator Dashboard</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your brands and luxury items</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            {!authenticatedBrand && (
-              <Button
-                variant="outline"
-                onClick={() => setIsAuthModalOpen(true)}
-                className="border-gray-300 dark:border-gray-600"
-              >
-                <Building2 className="w-4 h-4 mr-2" />
-                Connect Brand
-              </Button>
-            )}
-            
-            {authenticatedBrand && (
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {authenticatedBrand.name}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Authenticated
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAuthenticatedBrand(null)}
-                  className="border-gray-300 dark:border-gray-600"
-                >
-                  Disconnect
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Brand Authentication Modal */}
-          <Dialog open={isAuthModalOpen} onOpenChange={setIsAuthModalOpen}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Connect Your Brand</DialogTitle>
-              </DialogHeader>
-              <Form {...authForm}>
-                <form onSubmit={authForm.handleSubmit(handleBrandAuth)} className="space-y-4">
-                  <FormField
-                    control={authForm.control}
-                    name="authKey"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Authentication Key</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Enter your brand authentication key" 
-                            type="password"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                        <p className="text-xs text-gray-500">
-                          Use "rolex_2024_auth" for Rolex or "cartier_2024_auth" for Cartier
-                        </p>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsAuthModalOpen(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={authBrandMutation.isPending}
-                      className="flex-1 bg-black hover:bg-gray-800 text-white"
-                    >
-                      {authBrandMutation.isPending ? "Connecting..." : "Connect"}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-          
-        </div>
-
-        {/* Create Brand Modal */}
-        <Dialog open={isCreateBrandOpen} onOpenChange={setIsCreateBrandOpen}>
+          <Dialog open={isCreateBrandOpen} onOpenChange={setIsCreateBrandOpen}>
             <DialogTrigger asChild>
               <Button className="bg-black hover:bg-gray-800 text-white">
                 <Plus className="w-4 h-4 mr-2" />
