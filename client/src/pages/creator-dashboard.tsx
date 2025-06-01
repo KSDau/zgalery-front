@@ -23,195 +23,68 @@ import {
   Shield
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Brand, LuxuryItem } from "@shared/schema";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-
-const brandFormSchema = z.object({
-  name: z.string().min(1, "Brand name is required"),
-  description: z.string().min(1, "Description is required"),
-  website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  contactEmail: z.string().email("Please enter a valid email").optional().or(z.literal("")),
-});
-
-type BrandFormData = z.infer<typeof brandFormSchema>;
 
 /**
  * CreatorDashboard component that allows brands to manage their luxury items,
- * view brand analytics, and create new brands.
+ * view brand analytics, and mint new items from collections.
  */
 export default function CreatorDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // State for filtering and searching
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [brandFilter, setBrandFilter] = useState("all");
-  const [holderBrandFilter, setHolderBrandFilter] = useState("all");
-  const [selectedOwnerId] = useState(3); // Demo user ID
-  const [isCreateBrandOpen, setIsCreateBrandOpen] = useState(false);
-  const queryClient = useQueryClient();
-
-  const form = useForm<BrandFormData>({
-    resolver: zodResolver(brandFormSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      website: "",
-      contactEmail: "",
-    },
-  });
+  const [selectedOwnerId] = useState(3); // Mock authenticated user ID
 
   // Fetch brands data
   const { data: brands = [], isLoading: brandsLoading } = useQuery<Brand[]>({
-    queryKey: ['/api/brands'],
+    queryKey: ["/api/brands"],
   });
 
-  // Fetch items data  
+  // Fetch items data
   const { data: items = [], isLoading: itemsLoading } = useQuery<LuxuryItem[]>({
-    queryKey: ['/api/items'],
+    queryKey: ["/api/items"],
   });
 
-  // Create brand mutation
-  const createBrandMutation = useMutation({
-    mutationFn: async (brandData: BrandFormData) => {
-      const response = await fetch('/api/brands', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...brandData,
-          ownerId: 3 // Using test user ID for demo
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to create brand');
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Brand Created Successfully",
-        description: "Your brand has been created and is ready for item listings.",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/brands'] });
-      form.reset();
-      setIsCreateBrandOpen(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create brand",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleCreateBrand = (data: BrandFormData) => {
-    createBrandMutation.mutate(data);
-  };
-
-  // Get user's brands
   const userBrands = brands.filter((brand: Brand) => brand.ownerId === selectedOwnerId);
-  
-  // Filter items by brand ownership, search and status
+
   const filteredItems = items.filter((item: LuxuryItem) => {
     const itemBrand = brands.find((brand: Brand) => brand.id === item.brandId);
-    const ownsBrand = brandFilter === "all" || (itemBrand && itemBrand.ownerId === selectedOwnerId);
-    const matchesBrandFilter = brandFilter === "all" || item.brandId === parseInt(brandFilter);
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || item.status === statusFilter;
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesBrand = brandFilter === "all" || 
+                        (itemBrand && itemBrand.id.toString() === brandFilter);
+    const isUserItem = itemBrand && itemBrand.ownerId === selectedOwnerId;
     
-    return ownsBrand && matchesBrandFilter && matchesSearch && matchesStatus;
+    return matchesSearch && matchesBrand && isUserItem;
   });
 
-  // Calculate analytics for user's items
   const userItems = items.filter((item: LuxuryItem) => {
     const itemBrand = brands.find((brand: Brand) => brand.id === item.brandId);
     return itemBrand && itemBrand.ownerId === selectedOwnerId;
   });
-  
-  const totalItems = userItems.length;
+
   const activeItems = userItems.filter((item: LuxuryItem) => item.status === "listed").length;
   const soldItems = userItems.filter((item: LuxuryItem) => item.status === "sold").length;
-  const totalBrands = userBrands.length;
+
   const totalValue = userItems.reduce((sum, item: LuxuryItem) => {
-    const price = parseFloat(item.price.replace(/[$,]/g, '')) || 0;
-    return sum + price;
+    const price = parseFloat(item.price.replace(/[$,]/g, ""));
+    return sum + (isNaN(price) ? 0 : price);
   }, 0);
-  
-  const averagePrice = totalItems > 0 ? totalValue / totalItems : 0;
-  const conversionRate = totalItems > 0 ? (soldItems / totalItems) * 100 : 0;
 
-  // Mock holder data with Aleo addresses
-  const mockHolders = [
-    {
-      id: 1,
-      aleoAddress: "aleo1qnr4dkkvkgfqph0vzc3y6z2eu975wnpz2925ntjccd5cfqxtyu8s7pqcja",
-      itemCount: 3,
-      totalValue: 165000,
-      allowContact: true,
-      email: "collector@premium.com",
-      brandItems: [8, 9], // Patek Philippe brand
-      joinDate: "2024-01-15"
-    },
-    {
-      id: 2,
-      aleoAddress: "aleo1rhgdu77hgyqd3xjj8ucu3jj9r2krwz6mnzyd80gncr5fxjwzp5rs5lveh",
-      itemCount: 2,
-      totalValue: 90000,
-      allowContact: false,
-      email: null,
-      brandItems: [9], // Audemars Piguet brand
-      joinDate: "2024-02-20"
-    },
-    {
-      id: 3,
-      aleoAddress: "aleo1s3ws5tra87fjycnjrwsjcrnw2qxr8jfqqdugnf0xzqqw29q9m5pqem2u4t",
-      itemCount: 1,
-      totalValue: 52000,
-      allowContact: true,
-      email: "watch.enthusiast@luxury.net",
-      brandItems: [9], // Audemars Piguet brand
-      joinDate: "2024-03-10"
-    },
-    {
-      id: 4,
-      aleoAddress: "aleo1qvqr6szksxj8cq3h2yfwy5u2v2t8t4v4v4v4v4v4v4v4v4v4v4v4qyt8",
-      itemCount: 2,
-      totalValue: 200000,
-      allowContact: true,
-      email: "vip.collector@elite.com",
-      brandItems: [8, 9], // Both brands
-      joinDate: "2024-01-05"
-    }
-  ];
-
-  // Filter holders by selected brand
-  const filteredHolders = holderBrandFilter === "all" 
-    ? mockHolders 
-    : mockHolders.filter(holder => {
-        const brandIdNum = parseInt(holderBrandFilter);
-        return holder.brandItems.includes(brandIdNum);
-      });
+  const conversionRate = userItems.length > 0 ? (soldItems / userItems.length) * 100 : 0;
 
   if (brandsLoading || itemsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-              ))}
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading dashboard...</p>
             </div>
           </div>
         </div>
@@ -220,159 +93,65 @@ export default function CreatorDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setLocation("/marketplace")}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+              className="hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Marketplace
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Creator Dashboard</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Creator Dashboard</h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your brands and luxury items</p>
             </div>
           </div>
           
-          <Dialog open={isCreateBrandOpen} onOpenChange={setIsCreateBrandOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-black hover:bg-gray-800 text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Brand
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create New Brand</DialogTitle>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleCreateBrand)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Brand Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter brand name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Describe your brand" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="website"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Website (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://yourbrand.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="contactEmail"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Email (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="contact@yourbrand.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsCreateBrandOpen(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={createBrandMutation.isPending}
-                      className="flex-1 bg-black hover:bg-gray-800 text-white"
-                    >
-                      {createBrandMutation.isPending ? "Creating..." : "Create Brand"}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            className="bg-black hover:bg-gray-800 text-white"
+            onClick={() => setLocation("/mint-collection")}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Mint Item from Collection
+          </Button>
         </div>
 
         {/* Analytics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">My Items</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Items</CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalItems}</div>
+              <div className="text-2xl font-bold">{userItems.length}</div>
               <p className="text-xs text-muted-foreground">
-                {activeItems} listed, {soldItems} sold
+                {activeItems} active, {soldItems} sold
               </p>
             </CardContent>
           </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">My Brands</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalBrands}</div>
-              <p className="text-xs text-muted-foreground">
-                Active brand portfolio
-              </p>
-            </CardContent>
-          </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalValue.toLocaleString()}</div>
+              <div className="text-2xl font-bold">
+                ${totalValue.toLocaleString()}
+              </div>
               <p className="text-xs text-muted-foreground">
-                Avg: ${averagePrice.toLocaleString()}
+                Across {userBrands.length} brands
               </p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
@@ -381,24 +160,39 @@ export default function CreatorDashboard() {
             <CardContent>
               <div className="text-2xl font-bold">{conversionRate.toFixed(1)}%</div>
               <p className="text-xs text-muted-foreground">
-                Sales performance
+                {soldItems} of {userItems.length} items sold
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Brands</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{userBrands.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Verified brands
               </p>
             </CardContent>
           </Card>
         </div>
 
+        {/* Tabs Section */}
         <Tabs defaultValue="items" className="space-y-6">
-          <TabsList className="h-10 items-center justify-center rounded-md bg-muted p-1 grid w-full grid-cols-3 text-[#fbfcfc]">
-            <TabsTrigger value="items">Luxury Items</TabsTrigger>
-            <TabsTrigger value="holders">Holder Analytics</TabsTrigger>
-            <TabsTrigger value="brands">Brand Management</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="items">My Items</TabsTrigger>
+            <TabsTrigger value="brands">My Brands</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
+          {/* Items Tab */}
           <TabsContent value="items" className="space-y-6">
-            {/* Filters */}
+            {/* Search and Filter Controls */}
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   placeholder="Search items..."
                   value={searchTerm}
@@ -421,51 +215,33 @@ export default function CreatorDashboard() {
                   ))}
                 </SelectContent>
               </Select>
-              
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="listed">Listed</SelectItem>
-                  <SelectItem value="sold">Sold</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             {/* Items Table */}
             <Card>
               <CardHeader>
-                <CardTitle>Your Luxury Items</CardTitle>
+                <CardTitle>Luxury Items ({filteredItems.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Item</TableHead>
-                      <TableHead>Category</TableHead>
                       <TableHead>Brand</TableHead>
                       <TableHead>Price</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>Certified</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredItems.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
-                          <div className="text-gray-500 dark:text-gray-400">
-                            <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                            <p className="text-lg font-medium mb-1">No items found</p>
-                            <p className="text-sm">
-                              {searchTerm || statusFilter !== "all" 
-                                ? "Try adjusting your search or filters" 
-                                : "Start by creating your first luxury item"}
-                            </p>
-                          </div>
+                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                          {userItems.length === 0 
+                            ? "No items found. Start by minting items from your collections."
+                            : "No items match your search criteria."
+                          }
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -475,26 +251,34 @@ export default function CreatorDashboard() {
                           <TableRow key={item.id}>
                             <TableCell>
                               <div className="flex items-center gap-3">
-                                {item.images && item.images.length > 0 && (
-                                  <img
-                                    src={item.images[0]}
-                                    alt={item.name}
-                                    className="w-10 h-10 rounded-lg object-cover"
-                                  />
-                                )}
+                                <img
+                                  src={item.images[0] || "https://images.unsplash.com/photo-1611652022419-a9419f74343d"}
+                                  alt={item.name}
+                                  className="w-12 h-12 rounded-lg object-cover"
+                                />
                                 <div>
                                   <div className="font-medium">{item.name}</div>
-                                  <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-40">
+                                  <div className="text-sm text-gray-500 line-clamp-1">
                                     {item.description}
                                   </div>
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell>{item.category}</TableCell>
-                            <TableCell>{brand?.name || "Unknown"}</TableCell>
+                            <TableCell>
+                              {brand ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{brand.name}</span>
+                                  {brand.verified && (
+                                    <Shield className="w-4 h-4 text-blue-500" />
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">Unknown</span>
+                              )}
+                            </TableCell>
                             <TableCell className="font-medium">{item.price}</TableCell>
                             <TableCell>
-                              <Badge 
+                              <Badge
                                 variant={
                                   item.status === "listed" ? "default" :
                                   item.status === "sold" ? "secondary" : "outline"
@@ -504,11 +288,24 @@ export default function CreatorDashboard() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="sm">
+                              <Badge variant={item.certified ? "default" : "outline"}>
+                                {item.certified ? "Verified" : "Pending"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setLocation(`/item/${item.id}`)}
+                                >
                                   <Eye className="w-4 h-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setLocation(`/sell?edit=${item.id}`)}
+                                >
                                   <Edit className="w-4 h-4" />
                                 </Button>
                               </div>
@@ -523,281 +320,109 @@ export default function CreatorDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="holders" className="space-y-6">
-            {/* Holder Filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Select value={holderBrandFilter} onValueChange={setHolderBrandFilter}>
-                <SelectTrigger className="w-full sm:w-64">
-                  <Building2 className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Filter by brand" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All My Brands</SelectItem>
-                  {userBrands.map((brand: Brand) => (
-                    <SelectItem key={brand.id} value={brand.id.toString()}>
-                      {brand.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Holder Analytics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Holders</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{filteredHolders.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Active collectors
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Contactable</CardTitle>
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {filteredHolders.filter(h => h.allowContact).length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Allow communication
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Holdings</CardTitle>
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {filteredHolders.reduce((sum, h) => sum + h.itemCount, 0)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Items held
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Holdings Value</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    ${filteredHolders.reduce((sum, h) => sum + h.totalValue, 0).toLocaleString()}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Combined worth
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Holder List */}
+          {/* Brands Tab */}
+          <TabsContent value="brands" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Item Holders</CardTitle>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Collectors who own items from your brands
-                </p>
+                <CardTitle>My Brands ({userBrands.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Aleo Address</TableHead>
-                      <TableHead>Items Owned</TableHead>
-                      <TableHead>Portfolio Value</TableHead>
-                      <TableHead>Contact Status</TableHead>
-                      <TableHead>Member Since</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredHolders.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
-                          <div className="text-gray-500 dark:text-gray-400">
-                            <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                            <p className="text-lg font-medium mb-1">No holders found</p>
-                            <p className="text-sm">
-                              {holderBrandFilter !== "all" 
-                                ? "No collectors own items from this brand yet" 
-                                : "No collectors own items from your brands yet"}
-                            </p>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredHolders.map((holder) => (
-                        <TableRow key={holder.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Shield className="w-4 h-4 text-blue-500" />
-                              <code className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                                {holder.aleoAddress.slice(0, 20)}...
-                              </code>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Package className="w-4 h-4 text-gray-500" />
-                              <span className="font-medium">{holder.itemCount}</span>
-                              <span className="text-sm text-gray-500">items</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            ${holder.totalValue.toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {holder.allowContact ? (
-                                <>
-                                  <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                                    <Mail className="w-3 h-3 mr-1" />
-                                    Contactable
-                                  </Badge>
-                                  {holder.email && (
-                                    <span className="text-sm text-gray-500">{holder.email}</span>
-                                  )}
-                                </>
-                              ) : (
-                                <Badge variant="secondary">
-                                  <Shield className="w-3 h-3 mr-1" />
-                                  Private
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm text-gray-500">
-                            {new Date(holder.joinDate).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {holder.allowContact ? (
-                                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">
-                                  <MessageCircle className="w-4 h-4 mr-1" />
-                                  Contact
-                                </Button>
-                              ) : (
-                                <span className="text-sm text-gray-400">No contact</span>
-                              )}
-                              <Button variant="ghost" size="sm">
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {userBrands.map((brand: Brand) => (
+                    <Card key={brand.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">{brand.name}</CardTitle>
+                          {brand.verified && (
+                            <Shield className="w-5 h-5 text-blue-500" />
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          {brand.description}
+                        </p>
+                        <div className="text-sm text-gray-500">
+                          Items: {items.filter((item: LuxuryItem) => item.brandId === brand.id).length}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="brands" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Brand Portfolio</CardTitle>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Manage your luxury brand partnerships and collaborations
-                </p>
-              </CardHeader>
-              <CardContent>
-                {brands.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Building2 className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      No brands yet
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6">
-                      Create your first brand to start listing luxury items
-                    </p>
-                    <Button 
-                      onClick={() => setIsCreateBrandOpen(true)}
-                      className="bg-black hover:bg-gray-800 text-white"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Your First Brand
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {brands.map((brand: Brand) => {
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Brand Performance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {userBrands.map((brand: Brand) => {
                       const brandItems = items.filter((item: LuxuryItem) => item.brandId === brand.id);
-                      const brandValue = brandItems.reduce((sum, item) => {
-                        const price = parseFloat(item.price.replace(/[$,]/g, '')) || 0;
-                        return sum + price;
-                      }, 0);
+                      const soldBrandItems = brandItems.filter((item: LuxuryItem) => item.status === "sold").length;
+                      const brandConversion = brandItems.length > 0 ? (soldBrandItems / brandItems.length) * 100 : 0;
                       
                       return (
-                        <Card key={brand.id} className="hover:shadow-lg transition-shadow">
-                          <CardHeader>
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <CardTitle className="text-lg">{brand.name}</CardTitle>
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                  {brand.description}
-                                </p>
-                              </div>
-                              <Button variant="ghost" size="sm">
-                                <Edit className="w-4 h-4" />
-                              </Button>
+                        <div key={brand.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <div>
+                            <div className="font-medium">{brand.name}</div>
+                            <div className="text-sm text-gray-500">
+                              {brandItems.length} items • {soldBrandItems} sold
                             </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-3">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600 dark:text-gray-400">Items</span>
-                                <span className="font-medium">{brandItems.length}</span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600 dark:text-gray-400">Total Value</span>
-                                <span className="font-medium">${brandValue.toLocaleString()}</span>
-                              </div>
-                              {brand.website && (
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600 dark:text-gray-400">Website</span>
-                                  <a 
-                                    href={brand.website} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                                  >
-                                    Visit
-                                  </a>
-                                </div>
-                              )}
-                              <div className="pt-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="w-full"
-                                  onClick={() => setLocation("/sell")}
-                                >
-                                  Add Item
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-medium">{brandConversion.toFixed(1)}%</div>
+                            <div className="text-sm text-gray-500">conversion</div>
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Stats</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Total Revenue</span>
+                      <span className="font-medium">
+                        ${userItems
+                          .filter(item => item.status === "sold")
+                          .reduce((sum, item) => {
+                            const price = parseFloat(item.price.replace(/[$,]/g, ""));
+                            return sum + (isNaN(price) ? 0 : price);
+                          }, 0)
+                          .toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Average Item Value</span>
+                      <span className="font-medium">
+                        ${userItems.length > 0 ? Math.round(totalValue / userItems.length).toLocaleString() : "0"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400">Most Expensive Item</span>
+                      <span className="font-medium">
+                        ${Math.max(...userItems.map(item => {
+                          const price = parseFloat(item.price.replace(/[$,]/g, ""));
+                          return isNaN(price) ? 0 : price;
+                        }), 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
