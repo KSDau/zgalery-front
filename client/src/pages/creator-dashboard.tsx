@@ -78,7 +78,10 @@ export default function CreatorDashboard() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(brandData),
+        body: JSON.stringify({
+          ...brandData,
+          ownerId: 3 // Using test user ID for demo
+        }),
       });
       
       if (!response.ok) {
