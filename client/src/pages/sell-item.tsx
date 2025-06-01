@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const sellItemSchema = z.object({
   name: z.string().min(1, "Item name is required"),
@@ -69,19 +70,46 @@ export default function SellItem() {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const createItemMutation = useMutation({
+    mutationFn: async (itemData: SellItemForm) => {
+      const response = await fetch('/api/items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...itemData,
+          brandId: parseInt(itemData.brandId),
+          images: images,
+          status: "listed"
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create item');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Item Listed Successfully",
+        description: "Your luxury item has been created and is now available in the marketplace.",
+      });
+      form.reset();
+      setImages([]);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create item",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: SellItemForm) => {
-    // In a real application, this would submit to the backend
-    console.log("Form data:", data);
-    console.log("Images:", images);
-    
-    toast({
-      title: "Item Listed Successfully",
-      description: "Your luxury item has been submitted for review and will be listed on the marketplace soon.",
-    });
-    
-    // Reset form
-    form.reset();
-    setImages([]);
+    createItemMutation.mutate(data);
   };
 
   return (

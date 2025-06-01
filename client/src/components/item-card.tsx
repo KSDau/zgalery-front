@@ -2,10 +2,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { IdCard, Clock, Gavel } from "lucide-react";
 import { useLocation } from "wouter";
-import type { LuxuryItem } from "@/data/luxury-items";
 
 interface ItemCardProps {
-  item: LuxuryItem;
+  item: {
+    id: number;
+    name: string;
+    price: string;
+    description: string;
+    category: string;
+    brand: string;
+    images: string[];
+    certified: boolean;
+    saleType: string;
+    auctionEndTime?: string;
+    currentBid?: string;
+    totalBids?: number;
+  };
 }
 
 /**
@@ -34,7 +46,7 @@ export default function ItemCard({ item }: ItemCardProps) {
     >
       <div className="aspect-square overflow-hidden relative" style={{ backgroundColor: 'hsl(var(--zg-secondary))' }}>
         <img 
-          src={item.image} 
+          src={item.images?.[0] || 'https://images.unsplash.com/photo-1523170335258-f5c6c6bd6edc'} 
           alt={item.name}
           className="w-full h-full object-cover"
         />

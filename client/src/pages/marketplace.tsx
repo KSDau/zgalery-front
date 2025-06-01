@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { luxuryItems } from "@/data/luxury-items";
 import ItemCard from "@/components/item-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Plus } from "lucide-react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Marketplace component that displays the main luxury items marketplace
@@ -17,10 +18,27 @@ export default function Marketplace() {
   const [priceFilter, setPriceFilter] = useState("all");
   const [, setLocation] = useLocation();
 
+  // Fetch items from database
+  const { data: items = [], isLoading, error } = useQuery({
+    queryKey: ['/api/items'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Fetch brands for filtering
+  const { data: brands = [] } = useQuery({
+    queryKey: ['/api/brands'],
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+
   // Filter items based on search and filters
-  const filteredItems = luxuryItems.filter(item => {
+  const filteredItems = items.filter((item: any) => {
+    const brand = brands.find((b: any) => b.id === item.brandId);
+    const brandName = brand?.name || '';
+    
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         item.description.toLowerCase().includes(searchQuery.toLowerCase());
+                         item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         brandName.toLowerCase().includes(searchQuery.toLowerCase());
+    
     const matchesCategory = categoryFilter === "all" || item.category.toLowerCase() === categoryFilter.toLowerCase();
     
     let matchesPrice = true;
@@ -116,11 +134,43 @@ export default function Marketplace() {
       </div>
 
       {/* Items Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredItems.map(item => (
-          <ItemCard key={item.id} item={item} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="space-y-3">
+              <Skeleton className="h-64 w-full rounded-lg" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-lg font-medium" style={{ color: 'hsl(var(--zg-primary))' }}>
+            Failed to load items
+          </p>
+          <p className="text-sm mt-2" style={{ color: 'hsl(var(--zg-muted))' }}>
+            Please try again later
+          </p>
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-lg font-medium" style={{ color: 'hsl(var(--zg-primary))' }}>
+            No items found
+          </p>
+          <p className="text-sm mt-2" style={{ color: 'hsl(var(--zg-muted))' }}>
+            Try adjusting your search or filters
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredItems.map((item: any) => {
+            const brand = brands.find((b: any) => b.id === item.brandId);
+            const itemWithBrand = { ...item, brand: brand?.name || 'Unknown Brand' };
+            return <ItemCard key={item.id} item={itemWithBrand} />;
+          })}
+        </div>
+      )}
 
       {/* No results message */}
       {filteredItems.length === 0 && (
