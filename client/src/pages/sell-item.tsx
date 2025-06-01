@@ -98,8 +98,13 @@ export default function SellItem() {
         title: "Item Listed Successfully",
         description: "Your luxury item has been created and is now available in the marketplace.",
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/items'] });
       form.reset();
       setImages([]);
+      // Redirect to marketplace after successful creation
+      setTimeout(() => {
+        setLocation("/marketplace");
+      }, 1500);
     },
     onError: (error: Error) => {
       toast({

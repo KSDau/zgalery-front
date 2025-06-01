@@ -12,408 +12,519 @@ import {
   Plus, 
   Eye, 
   Edit, 
-  MessageSquare, 
   Users, 
   TrendingUp, 
   Package,
   Search,
   Filter,
-  Download
+  Building2
 } from "lucide-react";
-import { luxuryItems } from "@/data/luxury-items";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Brand, LuxuryItem } from "@shared/schema";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
-interface Owner {
-  id: string;
-  address: string;
-  purchaseDate: string;
-  purchasePrice: string;
-  status: "active" | "transferred";
-}
+const brandFormSchema = z.object({
+  name: z.string().min(1, "Brand name is required"),
+  description: z.string().min(1, "Description is required"),
+  website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+  contactEmail: z.string().email("Please enter a valid email").optional().or(z.literal("")),
+});
 
-interface CreatorItem {
-  id: number;
-  name: string;
-  category: string;
-  totalSupply: number;
-  currentOwners: number;
-  floorPrice: string;
-  totalVolume: string;
-  status: "active" | "paused" | "sold-out";
-  image: string;
-  owners: Owner[];
-}
+type BrandFormData = z.infer<typeof brandFormSchema>;
 
 /**
  * CreatorDashboard component that allows brands to manage their luxury items,
- * view ownership data, and interact with current owners.
+ * view brand analytics, and create new brands.
  */
 export default function CreatorDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedItem, setSelectedItem] = useState<CreatorItem | null>(null);
+  const [isCreateBrandOpen, setIsCreateBrandOpen] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Mock creator items data based on luxury items
-  const creatorItems: CreatorItem[] = luxuryItems.slice(0, 4).map((item, index) => ({
-    id: item.id,
-    name: item.name,
-    category: item.category,
-    totalSupply: 1,
-    currentOwners: 1,
-    floorPrice: item.price,
-    totalVolume: item.price,
-    status: index % 3 === 0 ? "sold-out" : index % 3 === 1 ? "active" : "paused",
-    image: item.image,
-    owners: [
-      {
-        id: "1",
-        address: "0x742d35Cc6664C8532d2aFa19B8e9FACcE25F0e8a",
-        purchaseDate: "2024-01-15",
-        purchasePrice: item.price,
-        status: "active"
+  const form = useForm<BrandFormData>({
+    resolver: zodResolver(brandFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      website: "",
+      contactEmail: "",
+    },
+  });
+
+  // Fetch brands data
+  const { data: brands = [], isLoading: brandsLoading } = useQuery<Brand[]>({
+    queryKey: ['/api/brands'],
+  });
+
+  // Fetch items data  
+  const { data: items = [], isLoading: itemsLoading } = useQuery<LuxuryItem[]>({
+    queryKey: ['/api/items'],
+  });
+
+  // Create brand mutation
+  const createBrandMutation = useMutation({
+    mutationFn: async (brandData: BrandFormData) => {
+      const response = await fetch('/api/brands', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(brandData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create brand');
       }
-    ]
-  }));
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Brand Created Successfully",
+        description: "Your brand has been created and is ready for item listings.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/brands'] });
+      form.reset();
+      setIsCreateBrandOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create brand",
+        variant: "destructive",
+      });
+    },
+  });
 
-  const filteredItems = creatorItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const handleCreateBrand = (data: BrandFormData) => {
+    createBrandMutation.mutate(data);
+  };
+
+  // Filter items by search and status
+  const filteredItems = items.filter((item: LuxuryItem) => {
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const handleViewItem = (item: CreatorItem) => {
-    setSelectedItem(item);
-  };
+  // Calculate analytics
+  const totalItems = items.length;
+  const activeItems = items.filter((item: LuxuryItem) => item.status === "listed").length;
+  const totalBrands = brands.length;
+  const totalValue = items.reduce((sum, item: LuxuryItem) => {
+    const price = parseFloat(item.price.replace(/[$,]/g, '')) || 0;
+    return sum + price;
+  }, 0);
 
-  const handleEditItem = (itemId: number) => {
-    toast({
-      title: "Edit Item",
-      description: "This would open the item editing interface.",
-    });
-  };
-
-  const handleContactOwner = (owner: Owner) => {
-    toast({
-      title: "Contact Owner",
-      description: `This would open a messaging interface to contact ${owner.address.substring(0, 6)}...${owner.address.substring(38)}`,
-    });
-  };
-
-  const handleExportData = () => {
-    toast({
-      title: "Export Started",
-      description: "Your ownership data is being prepared for download.",
-    });
-  };
-
-  const totalStats = {
-    totalItems: creatorItems.length,
-    activeItems: creatorItems.filter(item => item.status === "active").length,
-    totalOwners: creatorItems.reduce((sum, item) => sum + item.currentOwners, 0),
-    totalVolume: creatorItems.reduce((sum, item) => sum + parseInt(item.totalVolume.replace(/[$,]/g, "")), 0)
-  };
-
-  return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <Button 
-          variant="ghost" 
-          onClick={() => setLocation("/marketplace")}
-          className="mb-4 p-0 h-auto font-normal"
-          style={{ color: 'hsl(var(--zg-muted))' }}
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Marketplace
-        </Button>
-        
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold mb-2" style={{ color: 'hsl(var(--zg-primary))' }}>
-              Creator Dashboard
-            </h1>
-            <p style={{ color: 'hsl(var(--zg-muted))' }}>
-              Manage your luxury items and interact with current owners
-            </p>
+  if (brandsLoading || itemsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+              ))}
+            </div>
           </div>
-          <Button 
-            onClick={() => setLocation("/sell")}
-            style={{ 
-              backgroundColor: 'hsl(var(--zg-primary))',
-              color: 'hsl(var(--zg-bg))'
-            }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add New Item
-          </Button>
         </div>
       </div>
+    );
+  }
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card style={{ backgroundColor: 'white', borderColor: 'hsl(var(--zg-border))' }}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'hsl(var(--zg-muted))' }}>
-                  Total Items
-                </p>
-                <p className="text-2xl font-bold" style={{ color: 'hsl(var(--zg-primary))' }}>
-                  {totalStats.totalItems}
-                </p>
-              </div>
-              <Package className="h-8 w-8" style={{ color: 'hsl(var(--zg-muted))' }} />
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation("/marketplace")}
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Marketplace
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Creator Dashboard</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your brands and luxury items</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          
+          <Dialog open={isCreateBrandOpen} onOpenChange={setIsCreateBrandOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-black hover:bg-gray-800 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Brand
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Create New Brand</DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleCreateBrand)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Brand Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter brand name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Describe your brand" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="website"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Website (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://yourbrand.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="contactEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contact Email (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="contact@yourbrand.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsCreateBrandOpen(false)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={createBrandMutation.isPending}
+                      className="flex-1 bg-black hover:bg-gray-800 text-white"
+                    >
+                      {createBrandMutation.isPending ? "Creating..." : "Create Brand"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
 
-        <Card style={{ backgroundColor: 'white', borderColor: 'hsl(var(--zg-border))' }}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'hsl(var(--zg-muted))' }}>
-                  Active Items
-                </p>
-                <p className="text-2xl font-bold" style={{ color: 'hsl(var(--zg-primary))' }}>
-                  {totalStats.activeItems}
-                </p>
-              </div>
-              <TrendingUp className="h-8 w-8" style={{ color: 'hsl(var(--zg-muted))' }} />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Analytics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Items</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalItems}</div>
+              <p className="text-xs text-muted-foreground">
+                {activeItems} currently listed
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Brands</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalBrands}</div>
+              <p className="text-xs text-muted-foreground">
+                Active brand partnerships
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">${totalValue.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                Total catalog value
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{activeItems}</div>
+              <p className="text-xs text-muted-foreground">
+                Available for purchase
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card style={{ backgroundColor: 'white', borderColor: 'hsl(var(--zg-border))' }}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'hsl(var(--zg-muted))' }}>
-                  Total Owners
-                </p>
-                <p className="text-2xl font-bold" style={{ color: 'hsl(var(--zg-primary))' }}>
-                  {totalStats.totalOwners}
-                </p>
-              </div>
-              <Users className="h-8 w-8" style={{ color: 'hsl(var(--zg-muted))' }} />
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="items" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="items">Luxury Items</TabsTrigger>
+            <TabsTrigger value="brands">Brand Management</TabsTrigger>
+          </TabsList>
 
-        <Card style={{ backgroundColor: 'white', borderColor: 'hsl(var(--zg-border))' }}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'hsl(var(--zg-muted))' }}>
-                  Total Volume
-                </p>
-                <p className="text-2xl font-bold" style={{ color: 'hsl(var(--zg-primary))' }}>
-                  ${(totalStats.totalVolume / 1000).toFixed(0)}k
-                </p>
-              </div>
-              <TrendingUp className="h-8 w-8" style={{ color: 'hsl(var(--zg-muted))' }} />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="items" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="items">My Items</TabsTrigger>
-          <TabsTrigger value="owners">Owner Management</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="items" className="space-y-6">
-          {/* Filters */}
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 w-4 h-4" style={{ color: 'hsl(var(--zg-muted))' }} />
+          <TabsContent value="items" className="space-y-6">
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Search items..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-64"
-                  style={{ 
-                    backgroundColor: 'hsl(var(--zg-secondary))', 
-                    borderColor: 'hsl(var(--zg-border))' 
-                  }}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
                 />
               </div>
+              
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-48" style={{ backgroundColor: 'hsl(var(--zg-secondary))', borderColor: 'hsl(var(--zg-border))' }}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <Filter className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                  <SelectItem value="sold-out">Sold Out</SelectItem>
+                  <SelectItem value="listed">Listed</SelectItem>
+                  <SelectItem value="sold">Sold</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={handleExportData}
-              style={{ 
-                backgroundColor: 'hsl(var(--zg-secondary))',
-                color: 'hsl(var(--zg-primary))',
-                borderColor: 'hsl(var(--zg-border))'
-              }}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export Data
-            </Button>
-          </div>
 
-          {/* Items Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredItems.map(item => (
-              <Card key={item.id} style={{ backgroundColor: 'white', borderColor: 'hsl(var(--zg-border))' }}>
-                <div className="aspect-square overflow-hidden rounded-t-lg" style={{ backgroundColor: 'hsl(var(--zg-secondary))' }}>
-                  <img 
-                    src={item.image} 
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold" style={{ color: 'hsl(var(--zg-primary))' }}>
-                      {item.name}
-                    </h3>
-                    <Badge 
-                      variant={item.status === "active" ? "default" : item.status === "sold-out" ? "secondary" : "destructive"}
-                      className={
-                        item.status === "active" ? "bg-green-100 text-green-800" :
-                        item.status === "sold-out" ? "bg-gray-100 text-gray-800" :
-                        "bg-yellow-100 text-yellow-800"
-                      }
-                    >
-                      {item.status}
-                    </Badge>
-                  </div>
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between">
-                      <span style={{ color: 'hsl(var(--zg-muted))' }}>Owners:</span>
-                      <span style={{ color: 'hsl(var(--zg-primary))' }}>{item.currentOwners}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span style={{ color: 'hsl(var(--zg-muted))' }}>Floor Price:</span>
-                      <span style={{ color: 'hsl(var(--zg-primary))' }}>{item.floorPrice}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleViewItem(item)}
-                      className="flex-1"
-                      style={{ 
-                        backgroundColor: 'hsl(var(--zg-secondary))',
-                        color: 'hsl(var(--zg-primary))',
-                        borderColor: 'hsl(var(--zg-border))'
-                      }}
-                    >
-                      <Eye className="w-3 h-3 mr-1" />
-                      View
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleEditItem(item.id)}
-                      className="flex-1"
-                      style={{ 
-                        backgroundColor: 'hsl(var(--zg-secondary))',
-                        color: 'hsl(var(--zg-primary))',
-                        borderColor: 'hsl(var(--zg-border))'
-                      }}
-                    >
-                      <Edit className="w-3 h-3 mr-1" />
-                      Edit
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="owners" className="space-y-6">
-          <Card style={{ backgroundColor: 'white', borderColor: 'hsl(var(--zg-border))' }}>
-            <CardHeader>
-              <CardTitle style={{ color: 'hsl(var(--zg-primary))' }}>
-                Current Owners
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Owner Address</TableHead>
-                    <TableHead>Purchase Date</TableHead>
-                    <TableHead>Purchase Price</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {creatorItems.flatMap(item => 
-                    item.owners.map(owner => (
-                      <TableRow key={`${item.id}-${owner.id}`}>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <img 
-                              src={item.image} 
-                              alt={item.name}
-                              className="w-10 h-10 rounded-lg object-cover"
-                            />
-                            <span className="font-medium">{item.name}</span>
+            {/* Items Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Luxury Items</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredItems.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                          <div className="text-gray-500 dark:text-gray-400">
+                            <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                            <p className="text-lg font-medium mb-1">No items found</p>
+                            <p className="text-sm">
+                              {searchTerm || statusFilter !== "all" 
+                                ? "Try adjusting your search or filters" 
+                                : "Start by creating your first luxury item"}
+                            </p>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono">
-                          {owner.address.substring(0, 6)}...{owner.address.substring(38)}
-                        </TableCell>
-                        <TableCell>{owner.purchaseDate}</TableCell>
-                        <TableCell>{owner.purchasePrice}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={owner.status === "active" ? "default" : "secondary"}
-                            className={owner.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
-                          >
-                            {owner.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleContactOwner(owner)}
-                            style={{ 
-                              backgroundColor: 'hsl(var(--zg-secondary))',
-                              color: 'hsl(var(--zg-primary))',
-                              borderColor: 'hsl(var(--zg-border))'
-                            }}
-                          >
-                            <MessageSquare className="w-3 h-3 mr-1" />
-                            Contact
-                          </Button>
-                        </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                    ) : (
+                      filteredItems.map((item: LuxuryItem) => {
+                        const brand = brands.find((b: Brand) => b.id === item.brandId);
+                        return (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                {item.images && item.images.length > 0 && (
+                                  <img
+                                    src={item.images[0]}
+                                    alt={item.name}
+                                    className="w-10 h-10 rounded-lg object-cover"
+                                  />
+                                )}
+                                <div>
+                                  <div className="font-medium">{item.name}</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-40">
+                                    {item.description}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{item.category}</TableCell>
+                            <TableCell>{brand?.name || "Unknown"}</TableCell>
+                            <TableCell className="font-medium">{item.price}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={
+                                  item.status === "listed" ? "default" :
+                                  item.status === "sold" ? "secondary" : "outline"
+                                }
+                              >
+                                {item.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="sm">
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm">
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-      {/* Item Detail Modal would go here if selectedItem is not null */}
-    </main>
+          <TabsContent value="brands" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Brand Portfolio</CardTitle>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Manage your luxury brand partnerships and collaborations
+                </p>
+              </CardHeader>
+              <CardContent>
+                {brands.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Building2 className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                      No brands yet
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                      Create your first brand to start listing luxury items
+                    </p>
+                    <Button 
+                      onClick={() => setIsCreateBrandOpen(true)}
+                      className="bg-black hover:bg-gray-800 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Your First Brand
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {brands.map((brand: Brand) => {
+                      const brandItems = items.filter((item: LuxuryItem) => item.brandId === brand.id);
+                      const brandValue = brandItems.reduce((sum, item) => {
+                        const price = parseFloat(item.price.replace(/[$,]/g, '')) || 0;
+                        return sum + price;
+                      }, 0);
+                      
+                      return (
+                        <Card key={brand.id} className="hover:shadow-lg transition-shadow">
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg">{brand.name}</CardTitle>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                  {brand.description}
+                                </p>
+                              </div>
+                              <Button variant="ghost" size="sm">
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600 dark:text-gray-400">Items</span>
+                                <span className="font-medium">{brandItems.length}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-600 dark:text-gray-400">Total Value</span>
+                                <span className="font-medium">${brandValue.toLocaleString()}</span>
+                              </div>
+                              {brand.website && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600 dark:text-gray-400">Website</span>
+                                  <a 
+                                    href={brand.website} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                  >
+                                    Visit
+                                  </a>
+                                </div>
+                              )}
+                              <div className="pt-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="w-full"
+                                  onClick={() => setLocation("/sell")}
+                                >
+                                  Add Item
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
   );
 }

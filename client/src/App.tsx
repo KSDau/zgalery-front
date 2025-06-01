@@ -20,6 +20,7 @@ function Router() {
         <Route path="/" component={Marketplace} />
         <Route path="/marketplace" component={Marketplace} />
         <Route path="/sell" component={SellItem} />
+        <Route path="/creator-dashboard" component={CreatorDashboard} />
         <Route path="/creator" component={CreatorDashboard} />
         <Route path="/profile" component={UserProfile} />
         <Route path="/item/:id" component={ItemDetail} />
