@@ -17,7 +17,10 @@ import {
   Package,
   Search,
   Filter,
-  Building2
+  Building2,
+  Mail,
+  MessageCircle,
+  Shield
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -48,6 +51,7 @@ export default function CreatorDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [brandFilter, setBrandFilter] = useState("all");
+  const [holderBrandFilter, setHolderBrandFilter] = useState("all");
   const [selectedOwnerId] = useState(3); // Demo user ID
   const [isCreateBrandOpen, setIsCreateBrandOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -145,6 +149,58 @@ export default function CreatorDashboard() {
   
   const averagePrice = totalItems > 0 ? totalValue / totalItems : 0;
   const conversionRate = totalItems > 0 ? (soldItems / totalItems) * 100 : 0;
+
+  // Mock holder data with Aleo addresses
+  const mockHolders = [
+    {
+      id: 1,
+      aleoAddress: "aleo1qnr4dkkvkgfqph0vzc3y6z2eu975wnpz2925ntjccd5cfqxtyu8s7pqcja",
+      itemCount: 3,
+      totalValue: 165000,
+      allowContact: true,
+      email: "collector@premium.com",
+      brandItems: [8, 9], // Patek Philippe brand
+      joinDate: "2024-01-15"
+    },
+    {
+      id: 2,
+      aleoAddress: "aleo1rhgdu77hgyqd3xjj8ucu3jj9r2krwz6mnzyd80gncr5fxjwzp5rs5lveh",
+      itemCount: 2,
+      totalValue: 90000,
+      allowContact: false,
+      email: null,
+      brandItems: [9], // Audemars Piguet brand
+      joinDate: "2024-02-20"
+    },
+    {
+      id: 3,
+      aleoAddress: "aleo1s3ws5tra87fjycnjrwsjcrnw2qxr8jfqqdugnf0xzqqw29q9m5pqem2u4t",
+      itemCount: 1,
+      totalValue: 52000,
+      allowContact: true,
+      email: "watch.enthusiast@luxury.net",
+      brandItems: [9], // Audemars Piguet brand
+      joinDate: "2024-03-10"
+    },
+    {
+      id: 4,
+      aleoAddress: "aleo1qvqr6szksxj8cq3h2yfwy5u2v2t8t4v4v4v4v4v4v4v4v4v4v4v4qyt8",
+      itemCount: 2,
+      totalValue: 200000,
+      allowContact: true,
+      email: "vip.collector@elite.com",
+      brandItems: [8, 9], // Both brands
+      joinDate: "2024-01-05"
+    }
+  ];
+
+  // Filter holders by selected brand
+  const filteredHolders = holderBrandFilter === "all" 
+    ? mockHolders 
+    : mockHolders.filter(holder => {
+        const brandIdNum = parseInt(holderBrandFilter);
+        return holder.brandItems.includes(brandIdNum);
+      });
 
   if (brandsLoading || itemsLoading) {
     return (
@@ -332,8 +388,9 @@ export default function CreatorDashboard() {
         </div>
 
         <Tabs defaultValue="items" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="items">Luxury Items</TabsTrigger>
+            <TabsTrigger value="holders">Holder Analytics</TabsTrigger>
             <TabsTrigger value="brands">Brand Management</TabsTrigger>
           </TabsList>
 
@@ -459,6 +516,189 @@ export default function CreatorDashboard() {
                           </TableRow>
                         );
                       })
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="holders" className="space-y-6">
+            {/* Holder Filters */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Select value={holderBrandFilter} onValueChange={setHolderBrandFilter}>
+                <SelectTrigger className="w-full sm:w-64">
+                  <Building2 className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Filter by brand" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All My Brands</SelectItem>
+                  {userBrands.map((brand: Brand) => (
+                    <SelectItem key={brand.id} value={brand.id.toString()}>
+                      {brand.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Holder Analytics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Holders</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{filteredHolders.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Active collectors
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Contactable</CardTitle>
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {filteredHolders.filter(h => h.allowContact).length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Allow communication
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Holdings</CardTitle>
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {filteredHolders.reduce((sum, h) => sum + h.itemCount, 0)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Items held
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Holdings Value</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    ${filteredHolders.reduce((sum, h) => sum + h.totalValue, 0).toLocaleString()}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Combined worth
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Holder List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Item Holders</CardTitle>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Collectors who own items from your brands
+                </p>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Aleo Address</TableHead>
+                      <TableHead>Items Owned</TableHead>
+                      <TableHead>Portfolio Value</TableHead>
+                      <TableHead>Contact Status</TableHead>
+                      <TableHead>Member Since</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredHolders.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                          <div className="text-gray-500 dark:text-gray-400">
+                            <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                            <p className="text-lg font-medium mb-1">No holders found</p>
+                            <p className="text-sm">
+                              {holderBrandFilter !== "all" 
+                                ? "No collectors own items from this brand yet" 
+                                : "No collectors own items from your brands yet"}
+                            </p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredHolders.map((holder) => (
+                        <TableRow key={holder.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Shield className="w-4 h-4 text-blue-500" />
+                              <code className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                                {holder.aleoAddress.slice(0, 20)}...
+                              </code>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Package className="w-4 h-4 text-gray-500" />
+                              <span className="font-medium">{holder.itemCount}</span>
+                              <span className="text-sm text-gray-500">items</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            ${holder.totalValue.toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {holder.allowContact ? (
+                                <>
+                                  <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                    <Mail className="w-3 h-3 mr-1" />
+                                    Contactable
+                                  </Badge>
+                                  {holder.email && (
+                                    <span className="text-sm text-gray-500">{holder.email}</span>
+                                  )}
+                                </>
+                              ) : (
+                                <Badge variant="secondary">
+                                  <Shield className="w-3 h-3 mr-1" />
+                                  Private
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-500">
+                            {new Date(holder.joinDate).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {holder.allowContact ? (
+                                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">
+                                  <MessageCircle className="w-4 h-4 mr-1" />
+                                  Contact
+                                </Button>
+                              ) : (
+                                <span className="text-sm text-gray-400">No contact</span>
+                              )}
+                              <Button variant="ghost" size="sm">
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
                   </TableBody>
                 </Table>
