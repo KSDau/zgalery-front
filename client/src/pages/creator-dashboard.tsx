@@ -362,6 +362,7 @@ export default function CreatorDashboard() {
                       <TableHead>Holder Address</TableHead>
                       <TableHead>Items Count</TableHead>
                       <TableHead>Portfolio Value</TableHead>
+                      <TableHead>Last Purchase</TableHead>
                       <TableHead>Contact Allowed</TableHead>
                       <TableHead>Contact Info</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -382,9 +383,15 @@ export default function CreatorDashboard() {
                         const holderAddress = mockAddresses[item.id % mockAddresses.length];
                         
                         if (!acc[holderAddress]) {
+                          // Generate realistic recent purchase dates
+                          const daysAgo = Math.floor(Math.random() * 180) + 1; // 1-180 days ago
+                          const lastPurchaseDate = new Date();
+                          lastPurchaseDate.setDate(lastPurchaseDate.getDate() - daysAgo);
+                          
                           acc[holderAddress] = {
                             address: holderAddress,
                             items: [],
+                            lastPurchase: lastPurchaseDate,
                             allowContact: Math.random() > 0.5,
                             contactInfo: Math.random() > 0.3 ? "holder@example.com" : null
                           };
@@ -398,7 +405,7 @@ export default function CreatorDashboard() {
                       if (holders.length === 0) {
                         return (
                           <TableRow>
-                            <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                            <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                               No holders found for the selected criteria.
                             </TableCell>
                           </TableRow>
@@ -426,6 +433,21 @@ export default function CreatorDashboard() {
                             </TableCell>
                             <TableCell>
                               <span className="font-medium">${portfolioValue.toLocaleString()}</span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium">
+                                  {holder.lastPurchase.toLocaleDateString()}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {(() => {
+                                    const daysDiff = Math.floor((new Date().getTime() - holder.lastPurchase.getTime()) / (1000 * 60 * 60 * 24));
+                                    if (daysDiff === 0) return "Today";
+                                    if (daysDiff === 1) return "Yesterday";
+                                    return `${daysDiff} days ago`;
+                                  })()}
+                                </span>
+                              </div>
                             </TableCell>
                             <TableCell>
                               <Badge variant={holder.allowContact ? "default" : "secondary"}>
