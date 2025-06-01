@@ -280,26 +280,26 @@ export default function CreatorDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Items</CardTitle>
+              <CardTitle className="text-sm font-medium">My Items</CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalItems}</div>
               <p className="text-xs text-muted-foreground">
-                {activeItems} currently listed
+                {activeItems} listed, {soldItems} sold
               </p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Brands</CardTitle>
+              <CardTitle className="text-sm font-medium">My Brands</CardTitle>
               <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalBrands}</div>
               <p className="text-xs text-muted-foreground">
-                Active brand partnerships
+                Active brand portfolio
               </p>
             </CardContent>
           </Card>
@@ -312,20 +312,20 @@ export default function CreatorDashboard() {
             <CardContent>
               <div className="text-2xl font-bold">${totalValue.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
-                Total catalog value
+                Avg: ${averagePrice.toLocaleString()}
               </p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
+              <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{activeItems}</div>
+              <div className="text-2xl font-bold">{conversionRate.toFixed(1)}%</div>
               <p className="text-xs text-muted-foreground">
-                Available for purchase
+                Sales performance
               </p>
             </CardContent>
           </Card>
@@ -349,6 +349,21 @@ export default function CreatorDashboard() {
                   className="pl-10"
                 />
               </div>
+              
+              <Select value={brandFilter} onValueChange={setBrandFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <Building2 className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Filter by brand" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All My Brands</SelectItem>
+                  {userBrands.map((brand: Brand) => (
+                    <SelectItem key={brand.id} value={brand.id.toString()}>
+                      {brand.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-48">
