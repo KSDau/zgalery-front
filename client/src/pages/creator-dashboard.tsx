@@ -183,7 +183,7 @@ export default function CreatorDashboard() {
         <Tabs defaultValue="items" className="space-y-6">
           <TabsList className="h-10 items-center justify-center rounded-md bg-muted p-1 grid w-full grid-cols-3 text-[#f9fafb]">
             <TabsTrigger value="items">My Items</TabsTrigger>
-            <TabsTrigger value="brands">My Brands</TabsTrigger>
+            <TabsTrigger value="holders">My Holder Analytics</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -320,37 +320,221 @@ export default function CreatorDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Brands Tab */}
-          <TabsContent value="brands" className="space-y-6">
+          {/* Holder Analytics Tab */}
+          <TabsContent value="holders" className="space-y-6">
+            {/* Brand Filter for Holder Analytics */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Holder Analytics</h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">View holders and their inventory details</p>
+              </div>
+              <Select value={brandFilter} onValueChange={setBrandFilter}>
+                <SelectTrigger className="w-full sm:w-64">
+                  <Building2 className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Select brand to analyze" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All My Brands</SelectItem>
+                  {userBrands.map((brand: Brand) => (
+                    <SelectItem key={brand.id} value={brand.id.toString()}>
+                      {brand.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <Card>
               <CardHeader>
-                <CardTitle>My Brands ({userBrands.length})</CardTitle>
+                <CardTitle>
+                  Holder Information
+                  {brandFilter !== "all" && (
+                    <span className="text-sm font-normal text-gray-500 ml-2">
+                      for {userBrands.find(b => b.id.toString() === brandFilter)?.name}
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {userBrands.map((brand: Brand) => (
-                    <Card key={brand.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">{brand.name}</CardTitle>
-                          {brand.verified && (
-                            <Shield className="w-5 h-5 text-blue-500" />
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                          {brand.description}
-                        </p>
-                        <div className="text-sm text-gray-500">
-                          Items: {items.filter((item: LuxuryItem) => item.brandId === brand.id).length}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Holder Address</TableHead>
+                      <TableHead>Items Count</TableHead>
+                      <TableHead>Portfolio Value</TableHead>
+                      <TableHead>Contact Allowed</TableHead>
+                      <TableHead>Contact Info</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {/* Mock holder data based on current items - would be replaced with real holder data */}
+                    {(() => {
+                      const relevantItems = filteredItems.length > 0 ? filteredItems : userItems;
+                      const holderGroups = relevantItems.reduce((acc, item) => {
+                        // Mock Aleo addresses for demonstration
+                        const mockAddresses = [
+                          "aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3ljyzc",
+                          "aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq2q4qc2v",
+                          "aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8w8w8w",
+                          "aleo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq5j5j5j"
+                        ];
+                        const holderAddress = mockAddresses[item.id % mockAddresses.length];
+                        
+                        if (!acc[holderAddress]) {
+                          acc[holderAddress] = {
+                            address: holderAddress,
+                            items: [],
+                            allowContact: Math.random() > 0.5,
+                            contactInfo: Math.random() > 0.3 ? "holder@example.com" : null
+                          };
+                        }
+                        acc[holderAddress].items.push(item);
+                        return acc;
+                      }, {} as Record<string, any>);
+
+                      const holders = Object.values(holderGroups);
+
+                      if (holders.length === 0) {
+                        return (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                              No holders found for the selected criteria.
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+
+                      return holders.map((holder: any) => {
+                        const portfolioValue = holder.items.reduce((sum: number, item: LuxuryItem) => {
+                          const price = parseFloat(item.price.replace(/[$,]/g, ""));
+                          return sum + (isNaN(price) ? 0 : price);
+                        }, 0);
+
+                        return (
+                          <TableRow key={holder.address}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  {holder.address.slice(0, 8)}...{holder.address.slice(-6)}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-medium">{holder.items.length}</span>
+                              <span className="text-xs text-gray-500 ml-1">items</span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-medium">${portfolioValue.toLocaleString()}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={holder.allowContact ? "default" : "secondary"}>
+                                {holder.allowContact ? "Yes" : "No"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {holder.allowContact && holder.contactInfo ? (
+                                <div className="flex items-center gap-2">
+                                  <Mail className="w-4 h-4 text-gray-400" />
+                                  <span className="text-sm">{holder.contactInfo}</span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 text-sm">Not available</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title="View holder details"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                {holder.allowContact && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Contact holder"
+                                  >
+                                    <MessageCircle className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      });
+                    })()}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
+
+            {/* Holder Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">Total Holders</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {(() => {
+                      const relevantItems = filteredItems.length > 0 ? filteredItems : userItems;
+                      const uniqueHolders = new Set(relevantItems.map(item => item.id % 4));
+                      return uniqueHolders.size;
+                    })()}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Across {brandFilter !== "all" ? "selected brand" : "all brands"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">Contactable Holders</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {(() => {
+                      const relevantItems = filteredItems.length > 0 ? filteredItems : userItems;
+                      const uniqueHolders = new Set(relevantItems.map(item => item.id % 4));
+                      return Math.ceil(uniqueHolders.size * 0.7);
+                    })()}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Allow contact permissions
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">Avg. Portfolio Value</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    ${(() => {
+                      const relevantItems = filteredItems.length > 0 ? filteredItems : userItems;
+                      if (relevantItems.length === 0) return "0";
+                      
+                      const totalValue = relevantItems.reduce((sum, item) => {
+                        const price = parseFloat(item.price.replace(/[$,]/g, ""));
+                        return sum + (isNaN(price) ? 0 : price);
+                      }, 0);
+                      
+                      const uniqueHolders = new Set(relevantItems.map(item => item.id % 4));
+                      const avgValue = totalValue / Math.max(uniqueHolders.size, 1);
+                      return Math.round(avgValue).toLocaleString();
+                    })()}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Per holder
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Analytics Tab */}
