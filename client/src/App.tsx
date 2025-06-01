@@ -110,13 +110,24 @@ function App() {
     []
   );
 
+  console.log({
+    wallets,
+    perm: DecryptPermission.AutoDecrypt,
+    network: WalletAdapterNetwork.TestnetBeta,
+  });
+
   return (
     <QueryClientProvider client={queryClient}>
       <WalletProvider
         wallets={wallets}
-        decryptPermission={DecryptPermission.UponRequest}
-        network={WalletAdapterNetwork.Testnet}
-        autoConnect
+        decryptPermission={DecryptPermission.AutoDecrypt}
+        network={WalletAdapterNetwork.TestnetBeta}
+        autoConnect={true}
+        programs={[
+          "credits.aleo",
+          "zgallery.aleo",
+          "zgallery_marketplace.aleo",
+        ]}
       >
         <WalletModalProvider>
           <TooltipProvider>
