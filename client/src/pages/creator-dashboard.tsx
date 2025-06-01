@@ -388,7 +388,7 @@ export default function CreatorDashboard() {
         </div>
 
         <Tabs defaultValue="items" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="h-10 items-center justify-center rounded-md bg-muted p-1 grid w-full grid-cols-3 text-[#fbfcfc]">
             <TabsTrigger value="items">Luxury Items</TabsTrigger>
             <TabsTrigger value="holders">Holder Analytics</TabsTrigger>
             <TabsTrigger value="brands">Brand Management</TabsTrigger>
