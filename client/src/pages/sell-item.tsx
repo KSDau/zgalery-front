@@ -18,9 +18,10 @@ const sellItemSchema = z.object({
   price: z.string().min(1, "Price is required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   category: z.string().min(1, "Category is required"),
-  brand: z.string().min(1, "Brand is required"),
+  brandId: z.string().min(1, "Brand is required"),
   conservationStatus: z.string().min(1, "Conservation status is required"),
   identificationNumber: z.string().min(1, "Identification number is required"),
+  saleType: z.enum(["fixed", "auction"]),
 });
 
 type SellItemForm = z.infer<typeof sellItemSchema>;
@@ -41,9 +42,10 @@ export default function SellItem() {
       price: "",
       description: "",
       category: "",
-      brand: "",
+      brandId: "",
       conservationStatus: "",
       identificationNumber: "",
+      saleType: "fixed" as const,
     },
   });
 
@@ -197,7 +199,7 @@ export default function SellItem() {
 
                 <FormField
                   control={form.control}
-                  name="brand"
+                  name="brandId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel style={{ color: 'hsl(var(--zg-primary))' }}>
@@ -215,20 +217,11 @@ export default function SellItem() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="rolex">Rolex</SelectItem>
-                          <SelectItem value="cartier">Cartier</SelectItem>
-                          <SelectItem value="tiffany">Tiffany & Co.</SelectItem>
-                          <SelectItem value="hermes">Hermès</SelectItem>
-                          <SelectItem value="chanel">Chanel</SelectItem>
-                          <SelectItem value="louis-vuitton">Louis Vuitton</SelectItem>
-                          <SelectItem value="patek-philippe">Patek Philippe</SelectItem>
-                          <SelectItem value="omega">Omega</SelectItem>
-                          <SelectItem value="bulgari">Bulgari</SelectItem>
-                          <SelectItem value="van-cleef">Van Cleef & Arpels</SelectItem>
-                          <SelectItem value="basquiat">Jean-Michel Basquiat</SelectItem>
-                          <SelectItem value="picasso">Pablo Picasso</SelectItem>
-                          <SelectItem value="warhol">Andy Warhol</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
+                          <SelectItem value="1">Rolex</SelectItem>
+                          <SelectItem value="2">Cartier</SelectItem>
+                          <SelectItem value="3">Hermès</SelectItem>
+                          <SelectItem value="4">Tiffany & Co.</SelectItem>
+                          <SelectItem value="5">Chanel</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
