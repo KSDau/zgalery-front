@@ -47,6 +47,8 @@ export default function CreatorDashboard() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [brandFilter, setBrandFilter] = useState("all");
+  const [selectedOwnerId] = useState(3); // Demo user ID
   const [isCreateBrandOpen, setIsCreateBrandOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -112,21 +114,37 @@ export default function CreatorDashboard() {
     createBrandMutation.mutate(data);
   };
 
-  // Filter items by search and status
+  // Get user's brands
+  const userBrands = brands.filter((brand: Brand) => brand.ownerId === selectedOwnerId);
+  
+  // Filter items by brand ownership, search and status
   const filteredItems = items.filter((item: LuxuryItem) => {
+    const itemBrand = brands.find((brand: Brand) => brand.id === item.brandId);
+    const ownsBrand = brandFilter === "all" || (itemBrand && itemBrand.ownerId === selectedOwnerId);
+    const matchesBrandFilter = brandFilter === "all" || item.brandId === parseInt(brandFilter);
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    
+    return ownsBrand && matchesBrandFilter && matchesSearch && matchesStatus;
   });
 
-  // Calculate analytics
-  const totalItems = items.length;
-  const activeItems = items.filter((item: LuxuryItem) => item.status === "listed").length;
-  const totalBrands = brands.length;
-  const totalValue = items.reduce((sum, item: LuxuryItem) => {
+  // Calculate analytics for user's items
+  const userItems = items.filter((item: LuxuryItem) => {
+    const itemBrand = brands.find((brand: Brand) => brand.id === item.brandId);
+    return itemBrand && itemBrand.ownerId === selectedOwnerId;
+  });
+  
+  const totalItems = userItems.length;
+  const activeItems = userItems.filter((item: LuxuryItem) => item.status === "listed").length;
+  const soldItems = userItems.filter((item: LuxuryItem) => item.status === "sold").length;
+  const totalBrands = userBrands.length;
+  const totalValue = userItems.reduce((sum, item: LuxuryItem) => {
     const price = parseFloat(item.price.replace(/[$,]/g, '')) || 0;
     return sum + price;
   }, 0);
+  
+  const averagePrice = totalItems > 0 ? totalValue / totalItems : 0;
+  const conversionRate = totalItems > 0 ? (soldItems / totalItems) * 100 : 0;
 
   if (brandsLoading || itemsLoading) {
     return (
