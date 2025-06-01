@@ -262,7 +262,7 @@ export default function ItemDetail() {
                 </div>
                 <div className="flex justify-between">
                   <span style={{ color: 'hsl(var(--zg-muted))' }}>Authenticity:</span>
-                  <span className={`${item.certified ? "text-green-600" : "text-orange-600"} font-medium flex items-center`}>
+                  <span className={`font-medium flex items-center ${item.certified ? "text-green-600" : "text-orange-600"}`}>
                     <IdCard className="w-4 h-4 mr-1" />
                     {item.certified ? "Verified" : "Pending"}
                   </span>
