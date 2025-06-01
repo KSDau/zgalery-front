@@ -70,6 +70,8 @@ export default function SellItem() {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const queryClient = useQueryClient();
+
   const createItemMutation = useMutation({
     mutationFn: async (itemData: SellItemForm) => {
       const response = await fetch('/api/items', {
