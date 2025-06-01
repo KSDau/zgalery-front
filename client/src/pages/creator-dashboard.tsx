@@ -67,6 +67,13 @@ export default function CreatorDashboard() {
     },
   });
 
+  const authForm = useForm<BrandAuthData>({
+    resolver: zodResolver(brandAuthSchema),
+    defaultValues: {
+      authKey: "",
+    },
+  });
+
   // Fetch brands data
   const { data: brands = [], isLoading: brandsLoading } = useQuery<Brand[]>({
     queryKey: ['/api/brands'],
@@ -119,11 +126,51 @@ export default function CreatorDashboard() {
     createBrandMutation.mutate(data);
   };
 
-  // Filter items by search and status
+  // Brand authentication mutation
+  const authBrandMutation = useMutation({
+    mutationFn: async (authData: BrandAuthData) => {
+      const response = await fetch(`/api/brands/auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(authData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Invalid authentication key');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (brand: Brand) => {
+      setAuthenticatedBrand(brand);
+      setIsAuthModalOpen(false);
+      authForm.reset();
+      toast({
+        title: "Authentication Successful",
+        description: `Welcome back, ${brand.name}! You can now manage your items and customers.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Authentication Failed",
+        description: error.message || "Invalid authentication key",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleBrandAuth = (data: BrandAuthData) => {
+    authBrandMutation.mutate(data);
+  };
+
+  // Filter items by search and status (and brand if authenticated)
   const filteredItems = items.filter((item: LuxuryItem) => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesBrand = authenticatedBrand ? item.brandId === authenticatedBrand.id : true;
+    return matchesSearch && matchesStatus && matchesBrand;
   });
 
   // Calculate analytics
